@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import HeroLine from "../components/HeroLine";
 import HeroR3F from "../components/HeroR3F";
 import HeroWave3D from "../components/HeroWave3D";
+import Placeholder from "../components/Placeholder.astro";
 ---
 
 <Layout>
@@ -23,10 +24,16 @@ import HeroWave3D from "../components/HeroWave3D";
 			</div>
 		</div>
 	</section>
+
+	<Placeholder/>
+
+	<Placeholder/>
+
 </Layout>
 
 <script>
 	import { playTrack } from "../stores/player";
+	import Lenis from "lenis";
 
 	document.getElementById("test-play")?.addEventListener("click", () => {
 		playTrack({ url: "/audio/test-gergert.mp3", title: "Test Mix" });
@@ -119,6 +126,57 @@ import HeroWave3D from "../components/HeroWave3D";
 			});
 		}
 	}
+
+	const easeInOutQuint = (t: number) =>
+		t < 0.5
+				? 16 * t * t * t * t * t
+				: 1 - Math.pow(-2 * t + 2, 5) / 2;
+
+	const lenis = new Lenis({
+		duration: 1.2,
+		easing: easeInOutQuint,
+	});
+
+	function raf(time) {
+		lenis.raf(time);
+		requestAnimationFrame(raf);
+	}
+	requestAnimationFrame(raf);
+
+	console.log('lenis is: ', lenis);
+
+	lenis.stop();
+
+	const sections = Array.from(document.querySelectorAll("section"));
+	let currentIndex = 0;
+	let isAnimating = false;
+
+	function goToSection(index: number) {
+		const target = Math.max(0, Math.min(index, sections.length - 1));
+		if (target === currentIndex || isAnimating) return;
+
+		isAnimating = true;
+		currentIndex = target;
+
+		lenis.scrollTo(sections[currentIndex], {
+			duration: 1.2,
+			easing: easeInOutQuint,
+			force: true,
+			lock: true,
+			onComplete: () => {
+				setTimeout(() => {
+					isAnimating = false;
+				}, 250);
+			},
+		})
+	}
+
+	window.addEventListener("wheel", (e) => {
+		e.preventDefault();
+		if (isAnimating) return;
+		goToSection(currentIndex + (e.deltaY > 0 ? 1 : -1));
+	}, {passive: false});
+
 </script>
 
 <style>
@@ -173,14 +231,14 @@ import HeroWave3D from "../components/HeroWave3D";
 		font-size: 12px;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		color: var(--color-copper);
+		color: var(--color-title);
 	}
 
 	.hero__desc {
 		font-family: var(--font-body);
 		font-size: 15px;
 		line-height: 1.5;
-		color: rgba(242, 237, 233, 0.75);
+		color: var(--color-title);
 	}
 
 	.hero__actions {
