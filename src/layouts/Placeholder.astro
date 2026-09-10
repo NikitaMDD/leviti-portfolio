@@ -1,0 +1,28 @@
+---
+
+interface Props {
+    placeholderText?: string;
+}
+
+const { placeholderText = 'SOME CONTENT' } = Astro.props;
+
+---
+
+<section class="placeholder-section">
+    { placeholderText }
+</section>
+
+
+<style>
+    .placeholder-section {
+        background: white;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: clamp(2.5rem, 8vw, 6rem);
+        color: var(--color-burnt-orange);
+    }
+</style>
