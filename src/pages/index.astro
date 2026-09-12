@@ -33,19 +33,31 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 	<Placeholder background="BLACK" placeholderText="MIXES" />
 
 	<section class="about-me">
+		<svg class="about-me__bg-mark" aria-hidden="true" focusable="false">
+			<text x="0" y="50%" dominant-baseline="middle">KOVALEVA</text>
+		</svg>
 		<div class="about-me__info">
-			<h1>Ольга<br>Ковалева</h1>
+			<h1 class="about-me__title">
+				ОЛЬГА<br />
+				<span class="about-me__accent">КОВАЛЕВА</span>
+			</h1>
 
-			<p class="fw-semibold subtitle">
-				Event & club dj. Три года за пультом, год в ивент-индустрии. Лауреат премии Правительства Тульской
-				области в номинации «Профессиональное мастерство».
-			</p>
+			<div class="about-me__stats">
+				<span>3 года за пультом</span>
+				<span>1 год в индустрии</span>
+				<span>лауреат премии</span>
+			</div>
+
+			<div class="about-me__rule" aria-hidden="true"></div>
 
 			<p class="def-text">
-				Резидент баров «Гадальня» и «Флигель», играю в Park Hotel «Золотой город» на Китай-городе, шоуруме ОДМО
-				и рестобарах Москвы. Программу собираю под площадку и аудиторию — сет на закрытом ужине и сет в клубе устроены по-разному.
+				Лауреат премии Правительства Тульской области в номинации «Профессиональное мастерство».
+				Резидент баров «Гадальня» и «Флигель», играю в Park Hotel «Золотой город» на Китай-городе,
+				шоуруме ОДМО и рестобарах Москвы. Программу собираю под площадку и аудиторию — сет на закрытом
+				ужине и сет в клубе устроены по-разному.
 			</p>
 
+			<h4>Жанры:</h4>
 			<div class="genres">
 				<div class="genres__item">uk garage</div>
 				<div class="genres__item">electronic</div>
@@ -60,21 +72,23 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 				<div class="genres__item">dnb</div>
 				<div class="genres__item">pop в ремиксах</div>
 			</div>
-
 		</div>
 		<div class="about-me__photos" id="about-photos">
 			<ImageContainer
 				src="/photo/dj.jpg"
 				alt="фото Оли 1"
-				description="description example"
+				description="REC · 01/03"
 			/>
 			<ImageContainer
 				src="/photo/dj3.jpg"
 				alt="фото Оли 2"
+				description="REC · 02/03"
+				objectPosition="30% 30%"
 			/>
 			<ImageContainer
 				src="/photo/dj4.jpg"
 				alt="фото Оли 3"
+				description="REC · 03/03"
 			/>
 		</div>
 	</section>
@@ -343,6 +357,7 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		isAnimating = true;
 		const enteringForward = target > currentIndex;
 		currentIndex = target;
+		window.dispatchEvent(new CustomEvent('nav:active', { detail: { index: currentIndex } }));
 
 		if (isAboutSection(currentIndex)) {
 			setPhotoInstant(enteringForward ? 0 : aboutPhotos.length - 1);
@@ -570,34 +585,137 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 	}
 
 	.about-me {
+		position: relative;
+		overflow: hidden;
 		font-family: var(--font-mono);
 		display: flex;
+		align-items: center;
 		gap: 56px;
 		justify-content: center;
-		padding: 100px 0 0;
+		padding: var(--space-9) var(--space-6);
+		flex-wrap: wrap;
 	}
 
-	.about-me__info h1 {
-		font-size: 76px;
+	/* фоновая подпись — гигантская фамилия-призрак за колонкой текста, чтобы
+	   секция не читалась как плоская заливка после насыщенного hero. */
+	.about-me__bg-mark {
+		position: absolute;
+		z-index: 0;
+		left: -4vw;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		overflow: visible;
+		pointer-events: none;
+		user-select: none;
+	}
+
+	.about-me__bg-mark text {
+		font-family: var(--font-display);
 		font-weight: 900;
-		margin: 0;
-		line-height: 70px;
+		text-transform: uppercase;
+		font-size: clamp(7rem, 22vw, 17rem);
+		fill: rgba(242, 237, 233, 0.04);
+		stroke: rgba(242, 237, 233, 0.08);
+		stroke-width: 1px;
 	}
 
-	.fw-semibold {
-		font-weight: 600;
+	.about-me__info {
+		position: relative;
+		z-index: 1;
+		max-width: 620px;
+		width: 100%;
 	}
 
-	.subtitle {
-		font-size: 19px;
-		line-height: 30px;
+	.about-me__eyebrow {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--color-burnt-orange);
+		margin: 0 0 var(--space-4);
+	}
+
+	.about-me__title {
+		font-family: var(--font-display);
+		font-weight: 900;
+		text-transform: uppercase;
+		line-height: 0.92;
+		font-size: clamp(2.75rem, 6vw, 4.75rem);
+		margin: 0 0 var(--space-6);
+		color: var(--color-title);
+	}
+
+	.about-me__accent {
+		color: var(--color-burnt-orange);
+	}
+
+	.about-me__stats {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3) var(--space-5);
+		font-family: var(--font-mono);
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--color-title);
+		margin: 0 0 var(--space-6);
+	}
+
+	.about-me__stats span {
+		position: relative;
+		padding-left: var(--space-4);
+	}
+
+	.about-me__stats span::before {
+		content: "";
+		position: absolute;
+		left: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 4px;
+		height: 4px;
+		background: var(--color-lust);
+	}
+
+	.about-me__stats span:first-child {
+		padding-left: 0;
+	}
+
+	.about-me__stats span:first-child::before {
+		display: none;
+	}
+
+	.about-me__rule {
+		width: 48px;
+		height: 2px;
+		background: var(--color-burnt-orange);
+		margin: 0 0 var(--space-6);
 	}
 
 	.def-text {
+		font-family: var(--font-body);
 		font-size: 16px;
 		font-weight: 500;
 		color: #F2EDE9B3;
-		line-height: 27px;
+		line-height: 1.7;
+		margin: 0 0 var(--space-7);
+		max-width: 560px;
+	}
+
+	.about-me__genres {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		line-height: 2;
+		color: var(--color-blue-lagoon);
+		max-width: 560px;
+		margin: 0;
+	}
+
+	.about-me__info h4 {
+		margin: 50px 0 0;
 	}
 
 	.genres {
@@ -605,7 +723,8 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 8px;
-		margin: 50px 0 0;
+		margin: 20px 0 0;
+
 	}
 
 	.genres__item {
@@ -616,15 +735,14 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		padding: 8px 13px;
 	}
 
-	.about-me__info {
-		max-width: 752px;
-		width: 100%;
-	}
-
 	.about-me__photos {
 		position: relative;
+		z-index: 1;
 		display: grid;
 		overflow: hidden;
+		width: 100%;
+		max-width: 420px;
+		flex: 0 0 auto;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
