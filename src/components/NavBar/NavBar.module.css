@@ -1,0 +1,59 @@
+.wrapper {
+}
+
+.navBar {
+    position: fixed;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--color-title);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    width: 100%;
+    padding: 22px 56px;
+    z-index: 9999;
+}
+
+.navBarLogoSlot {
+    width: 90px;
+    height: 20px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.navLinks {
+    display: flex;
+    align-items: center;
+    gap: 34px;
+}
+
+.navBarItem {
+    cursor: pointer;
+    position: relative;
+    padding-bottom: 6px;
+}
+
+.label {
+    position: relative;
+    color: var(--color-title);
+}
+
+.labelFill {
+    position: absolute;
+    inset: 0;
+    color: var(--color-burnt-orange);
+    clip-path: inset(0 100% 0 0);
+    pointer-events: none;
+}
+
+.underline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--color-burnt-orange);
+    clip-path: inset(0 100% 0 0);
+    pointer-events: none;
+}
