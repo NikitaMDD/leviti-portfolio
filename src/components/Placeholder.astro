@@ -2,20 +2,27 @@
 
 interface Props {
     placeholderText?: string;
+    background?: "WHITE" | "BLACK";
 }
 
-const { placeholderText = 'SOME CONTENT' } = Astro.props;
+const {
+    placeholderText = 'CONTENT',
+    background = "WHITE",
+} = Astro.props;
 
 ---
 
-<section class="placeholder-section">
+<section
+    class={
+        background === "WHITE" ? "placeholder-section placeholder-section--white" : "placeholder-section placeholder-section--black"
+    }
+>
     { placeholderText }
 </section>
 
 
 <style>
     .placeholder-section {
-        background: white;
         width: 100%;
         display: flex;
         flex-direction: column;
@@ -23,6 +30,15 @@ const { placeholderText = 'SOME CONTENT' } = Astro.props;
         justify-content: center;
         font-weight: 900;
         font-size: clamp(2.5rem, 8vw, 6rem);
+    }
+
+    .placeholder-section--white {
+        background: var(--color-title);
         color: var(--color-burnt-orange);
+    }
+
+    .placeholder-section--black {
+        background: var(--color-black-pearl);
+        color: var(--color-title);
     }
 </style>
