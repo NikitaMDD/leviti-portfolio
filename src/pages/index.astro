@@ -4,9 +4,13 @@ import HeroLine from "../components/HeroLine";
 import HeroR3F from "../components/HeroR3F";
 import HeroWave3D from "../components/HeroWave3D";
 import Placeholder from "../components/Placeholder.astro";
+import {ImageContainer} from "../components/ImageContainer";
+import { NavBar } from "../components/NavBar";
+import PlayPauseIcon from "../components/PlayPauseIcon";
 ---
 
 <Layout>
+	<NavBar links={['Главная', 'Миксы', 'О себе', 'Ивенты', 'Контакты']} client:idle />
 	<section class="hero is-animating" id="hero">
 		<!--<HeroLine client:load />-->
 		<!--<HeroR3F client:load />-->
@@ -14,30 +18,77 @@ import Placeholder from "../components/Placeholder.astro";
 
 		<div class="hero__content">
 			<p class="hero__eyebrow">event &amp; club dj · москва / тула</p>
-			<h1 class="hero__title" id="hero-title">LEVITI</h1>
+			<div class="hero__title hero__title-ghost" id="hero-title-ghost" aria-hidden="true">LEVITI</div>
 			<p class="hero__desc">
 				UK garage, house, bass music и авторские эдиты. Программа собирается под
 				площадку и аудиторию — от тонплея до скретча.
 			</p>
 			<div class="hero__actions">
-				<button id="test-play" class="hero__mix-btn">▷ Слушать миксы</button>
+				<button id="test-play" class="hero__mix-btn"> <PlayPauseIcon playing={false} /> Слушать миксы</button>
 			</div>
+		</div>
+		<h1 class="hero__title hero__title--pinned" id="hero-title">LEVITI</h1>
+	</section>
+
+	<Placeholder background="BLACK" placeholderText="MIXES" />
+
+	<section class="about-me">
+		<div class="about-me__info">
+			<h1>Ольга<br>Ковалева</h1>
+
+			<p class="fw-semibold subtitle">
+				Event & club dj. Три года за пультом, год в ивент-индустрии. Лауреат премии Правительства Тульской
+				области в номинации «Профессиональное мастерство».
+			</p>
+
+			<p class="def-text">
+				Резидент баров «Гадальня» и «Флигель», играю в Park Hotel «Золотой город» на Китай-городе, шоуруме ОДМО
+				и рестобарах Москвы. Программу собираю под площадку и аудиторию — сет на закрытом ужине и сет в клубе устроены по-разному.
+			</p>
+
+			<div class="genres">
+				<div class="genres__item">uk garage</div>
+				<div class="genres__item">electronic</div>
+				<div class="genres__item">house</div>
+				<div class="genres__item">jazz house</div>
+				<div class="genres__item">funky house</div>
+				<div class="genres__item">deep</div>
+				<div class="genres__item">tech house</div>
+				<div class="genres__item">bass music</div>
+				<div class="genres__item">nu-disco</div>
+				<div class="genres__item">dubstep</div>
+				<div class="genres__item">dnb</div>
+				<div class="genres__item">pop в ремиксах</div>
+			</div>
+
+		</div>
+		<div class="about-me__photos" id="about-photos">
+			<ImageContainer
+				src="/photo/dj.jpg"
+				alt="фото Оли 1"
+				description="description example"
+			/>
+			<ImageContainer
+				src="/photo/dj3.jpg"
+				alt="фото Оли 2"
+			/>
+			<ImageContainer
+				src="/photo/dj4.jpg"
+				alt="фото Оли 3"
+			/>
 		</div>
 	</section>
 
-	<Placeholder/>
+	<Placeholder background="BLACK" placeholderText="EVENTS" />
 
-	<section class="gallery">
-		SOME PHOTOS
-	</section>
-
-	<Placeholder/>
+	<Placeholder background="BLACK" placeholderText="BOOKING"/>
 
 </Layout>
 
 <script>
 	import { playTrack } from "../stores/player";
 	import Lenis from "lenis";
+	import gsap from "gsap";
 
 	document.getElementById("test-play")?.addEventListener("click", () => {
 		playTrack({ url: "/audio/test-gergert.mp3", title: "Test Mix" });
@@ -45,12 +96,81 @@ import Placeholder from "../components/Placeholder.astro";
 
 	const hero = document.getElementById("hero");
 	const title = document.getElementById("hero-title");
+	const heroTitleGhost = document.getElementById("hero-title-ghost");
 	const restElements = [
 		document.querySelector(".hero__eyebrow"),
 		document.querySelector(".hero__desc"),
 		document.querySelector(".hero__actions"),
 	];
 	const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+	const easeInOutQuint = (t: number) =>
+		t < 0.5
+				? 16 * t * t * t * t * t
+				: 1 - Math.pow(-2 * t + 2, 5) / 2;
+
+	// titleStartRect — «родная» позиция заголовка в hero, берётся с невидимого
+	// спейсера (heroTitleGhost), который всегда в нормальном потоке. Сам #hero-title
+	// зафиксирован (position: fixed) и своей собственной getBoundingClientRect()
+	// ничего полезного не даст — она всегда «привязана» к left:0; top:0.
+	let titleStartRect: DOMRect | null = null;
+	let titleTargetRect: DOMRect | null = null;
+	let introDone = false;
+
+	function measureStickyTitle() {
+		if (!heroTitleGhost) return;
+		const ghostRect = heroTitleGhost.getBoundingClientRect();
+		// ghost — обычный элемент в потоке; если измерение попадёт на момент, когда
+		// страница уже прокручена (например, resize на секции ниже), приводим rect
+		// к тому виду, какой он имел бы при scrollY = 0 — иначе вся арифметика
+		// стыковки ниже поедет
+		titleStartRect = new DOMRect(
+			ghostRect.left,
+			ghostRect.top + window.scrollY,
+			ghostRect.width,
+			ghostRect.height,
+		);
+		const navSlot = document.getElementById("navbar-logo-slot");
+		if (navSlot) titleTargetRect = navSlot.getBoundingClientRect();
+	}
+
+	function applyStickyTitle(scrollY: number) {
+		if (!title || !titleStartRect || !titleTargetRect) return;
+
+		// Настоящий sticky: заголовок — не "плавающий над страницей" элемент с
+		// собственной кривой анимации, а ведёт себя как обычный (не fixed) элемент —
+		// едет вместе со страницей 1:1 — до тех пор, пока его родная позиция не
+		// долетит ровно до места в навбаре. dockThreshold — это и есть тот момент
+		// "навбар дотянулся до надписи". Формула симметрична сама по себе, поэтому
+		// отдельного кода для скролла вверх не нужно — при уменьшении scrollY всё
+		// просто проигрывается в обратную сторону.
+		const dockThreshold = titleStartRect.top - titleTargetRect.top;
+
+		if (scrollY <= dockThreshold) {
+			const y = titleStartRect.top - scrollY;
+			title.style.transform = `translate(${titleStartRect.left}px, ${y}px) scale(1)`;
+			return;
+		}
+
+		// «подхвачен» навбаром — дальше не едет вместе со страницей, а стыкуется
+		// на месте и на оставшемся участке скролла ужимается до нужного размера
+		const remaining = window.innerHeight - dockThreshold;
+		const p = remaining > 0
+			? Math.min(Math.max((scrollY - dockThreshold) / remaining, 0), 1)
+			: 1;
+		const eased = p * p * (3 - 2 * p); // smoothstep, только для самого превращения
+
+		const scale = 1 + (titleTargetRect.width / titleStartRect.width - 1) * eased;
+		const x = titleStartRect.left + (titleTargetRect.left - titleStartRect.left) * eased;
+
+		title.style.transform = `translate(${x}px, ${titleTargetRect.top}px) scale(${scale})`;
+	}
+
+	measureStickyTitle();
+	window.addEventListener("resize", measureStickyTitle);
+	// шрифт Archivo грузится асинхронно — если он подъедет после первого замера,
+	// пересчитываем rect, иначе стартовая позиция может быть на пиксель-другой мимо
+	document.fonts?.ready?.then(measureStickyTitle);
 
 	// Проявляет переданные элементы по очереди (stagger), полностью через JS —
 	// без CSS-класса с keyframe-анимацией, чтобы не словить "флеш" полностью
@@ -83,30 +203,36 @@ import Placeholder from "../components/Placeholder.astro";
 		});
 	}
 
-	if (hero && title) {
+	if (hero && title && titleStartRect) {
+		const startRect = titleStartRect;
+
 		if (prefersReducedMotion) {
 			hero.classList.remove("is-animating");
 			hero.classList.add("is-landed");
+			title.style.transform = `translate(${startRect.left}px, ${startRect.top}px) scale(1)`;
+			introDone = true;
 		} else {
 			// прячем заголовок, пока не измерили его настоящую (финальную) позицию —
 			// иначе на один кадр мелькнёт в правильном месте до того, как мы его "телепортируем"
 			title.style.visibility = "hidden";
 
 			requestAnimationFrame(() => {
-				const rect = title.getBoundingClientRect();
-				const finalCenterX = rect.left + rect.width / 2;
-				const finalCenterY = rect.top + rect.height / 2;
 				const viewportCenterX = window.innerWidth / 2;
 				const viewportCenterY = window.innerHeight / 2;
 
 				const startScale = 1.7; // насколько крупнее заголовок в стартовой точке
-				const dx = viewportCenterX - finalCenterX;
-				const dy = viewportCenterY - finalCenterY;
+				// transform-origin у #hero-title — top left, поэтому рост масштаба идёт
+				// от угла, а не от центра: компенсируем это половиной прироста размера,
+				// чтобы визуально центр укрупнённого заголовка совпал с центром экрана
+				const startWidth = startRect.width * startScale;
+				const startHeight = startRect.height * startScale;
+				const startX = viewportCenterX - startWidth / 2;
+				const startY = viewportCenterY - startHeight / 2;
 
 				// мгновенно (без transition) ставим заголовок в стартовую позицию —
 				// крупно и по центру экрана. Это тот же самый элемент, просто временно
 				// визуально смещённый transform'ом
-				title.style.transform = `translate(${dx}px, ${dy}px) scale(${startScale})`;
+				title.style.transform = `translate(${startX}px, ${startY}px) scale(${startScale})`;
 				title.style.opacity = "0";
 				title.style.visibility = "visible";
 
@@ -115,10 +241,10 @@ import Placeholder from "../components/Placeholder.astro";
 					title.style.transition = "opacity 0.5s ease";
 					title.style.opacity = "1";
 
-					// пауза, затем — полёт в реальную позицию (translate/scale к нулю)
+					// пауза, затем — полёт в реальную позицию (совпадает с startRect)
 					setTimeout(() => {
 						title.style.transition = "transform 1.1s cubic-bezier(0.16, 1, 0.3, 1)";
-						title.style.transform = "translate(0, 0) scale(1)";
+						title.style.transform = `translate(${startRect.left}px, ${startRect.top}px) scale(1)`;
 					}, 500);
 				});
 			});
@@ -126,15 +252,12 @@ import Placeholder from "../components/Placeholder.astro";
 			title.addEventListener("transitionend", function onDone(e) {
 				if (e.propertyName !== "transform") return;
 				title.removeEventListener("transitionend", onDone);
+				title.style.transition = "";
+				introDone = true;
 				revealStagger(restElements);
 			});
 		}
 	}
-
-	const easeInOutQuint = (t: number) =>
-		t < 0.5
-				? 16 * t * t * t * t * t
-				: 1 - Math.pow(-2 * t + 2, 5) / 2;
 
 	const lenis = new Lenis({
 		duration: 1.2,
@@ -143,8 +266,10 @@ import Placeholder from "../components/Placeholder.astro";
 
 	function raf(time) {
 		lenis.raf(time);
+		if (introDone) applyStickyTitle(lenis.scroll);
 		requestAnimationFrame(raf);
 	}
+
 	requestAnimationFrame(raf);
 
 	console.log('lenis is: ', lenis);
@@ -155,12 +280,73 @@ import Placeholder from "../components/Placeholder.astro";
 	let currentIndex = 0;
 	let isAnimating = false;
 
+	const aboutPhotos = Array.from(
+		document.querySelectorAll<HTMLElement>("#about-photos .js-about-photo")
+	);
+	let photoIndex = 0;
+	let photoAnimating = false;
+
+	function isAboutSection(index: number) {
+		return sections[index]?.classList.contains("about-me") ?? false;
+	}
+
+	function setPhotoInstant(index: number) {
+		photoIndex = Math.max(0, Math.min(index, aboutPhotos.length - 1));
+		aboutPhotos.forEach((photo, i) => {
+			gsap.set(photo, {
+				opacity: i === photoIndex ? 1 : 0,
+				yPercent: 0,
+				pointerEvents: i === photoIndex ? "auto" : "none",
+			});
+		});
+	}
+
+	function showPhoto(nextIndex: number) {
+		if (photoAnimating || nextIndex === photoIndex) return;
+
+		const current = aboutPhotos[photoIndex];
+		const next = aboutPhotos[nextIndex];
+		const goingForward = nextIndex > photoIndex;
+		const duration = prefersReducedMotion ? 0 : 1.2;
+
+		photoAnimating = true;
+		gsap.set(next, { opacity: 0, yPercent: goingForward ? 100 : -100, pointerEvents: "none" });
+
+		gsap.timeline({
+			defaults: { duration, ease: easeInOutQuint },
+			onComplete: () => {
+				gsap.set(current, { pointerEvents: "none" });
+				gsap.set(next, { pointerEvents: "auto" });
+				photoAnimating = false;
+			},
+		})
+			.to(current, { yPercent: goingForward ? -100 : 100, opacity: 0 }, 0)
+			.to(next, { yPercent: 0, opacity: 1 }, 0);
+
+		photoIndex = nextIndex;
+	}
+
+	function handleAboutScroll(direction: 1 | -1) {
+		if (!isAboutSection(currentIndex) || aboutPhotos.length === 0) return false;
+
+		const nextPhoto = photoIndex + direction;
+		if (nextPhoto < 0 || nextPhoto > aboutPhotos.length - 1) return false;
+
+		showPhoto(nextPhoto);
+		return true;
+	}
+
 	function goToSection(index: number) {
 		const target = Math.max(0, Math.min(index, sections.length - 1));
 		if (target === currentIndex || isAnimating) return;
 
 		isAnimating = true;
+		const enteringForward = target > currentIndex;
 		currentIndex = target;
+
+		if (isAboutSection(currentIndex)) {
+			setPhotoInstant(enteringForward ? 0 : aboutPhotos.length - 1);
+		}
 
 		lenis.scrollTo(sections[currentIndex], {
 			duration: 1.2,
@@ -175,10 +361,17 @@ import Placeholder from "../components/Placeholder.astro";
 		})
 	}
 
+	window.addEventListener('nav:goto', (e: Event) => {
+		const { index } = (e as CustomEvent<{index: number}>).detail;
+		goToSection(index);
+	})
+
 	window.addEventListener("wheel", (e) => {
 		e.preventDefault();
-		if (isAnimating) return;
-		goToSection(currentIndex + (e.deltaY > 0 ? 1 : -1));
+		if (isAnimating || photoAnimating) return;
+		const direction = e.deltaY > 0 ? 1 : -1;
+		if (handleAboutScroll(direction)) return;
+		goToSection(currentIndex + direction);
 	}, {passive: false});
 
 	let touchStartY = 0;
@@ -188,10 +381,12 @@ import Placeholder from "../components/Placeholder.astro";
 	}, {passive: true});
 
 	window.addEventListener("touchend", (e: TouchEvent) => {
-		if (isAnimating) return;
+		if (isAnimating || photoAnimating) return;
 		const deltaY = touchStartY - e.changedTouches[0].clientY;
-		if (Math.abs(deltaY) < 30) return; // порог, чтобы не ловить случайные тапы/дрожь пальца
-		goToSection(currentIndex + (deltaY > 0 ? 1 : -1));
+		if (Math.abs(deltaY) < 30) return;
+		const direction = deltaY > 0 ? 1 : -1;
+		if (handleAboutScroll(direction)) return;
+		goToSection(currentIndex + direction);
 	}, {passive: true});
 
 </script>
@@ -224,7 +419,19 @@ import Placeholder from "../components/Placeholder.astro";
 		line-height: 0.95;
 		font-size: clamp(2.5rem, 8vw, 6rem);
 		color: var(--color-title);
-		transform-origin: center center;
+	}
+
+	.hero__title-ghost {
+		visibility: hidden;
+	}
+
+	.hero__title--pinned {
+		position: fixed;
+		left: 0;
+		top: 0;
+		z-index: 2;
+		transform-origin: top left;
+		will-change: transform;
 	}
 
 	.hero__eyebrow,
@@ -276,6 +483,10 @@ import Placeholder from "../components/Placeholder.astro";
 		width: 133px;
 		cursor: pointer;
 		padding: 12px 0;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 3px;
 	}
 
 	.hero__book-btn {
@@ -356,6 +567,64 @@ import Placeholder from "../components/Placeholder.astro";
 		font-weight: 900;
 		font-size: clamp(2.5rem, 8vw, 6rem);
 		color: var(--color-blue-lagoon);
+	}
+
+	.about-me {
+		font-family: var(--font-mono);
+		display: flex;
+		gap: 56px;
+		justify-content: center;
+		padding: 100px 0 0;
+	}
+
+	.about-me__info h1 {
+		font-size: 76px;
+		font-weight: 900;
+		margin: 0;
+		line-height: 70px;
+	}
+
+	.fw-semibold {
+		font-weight: 600;
+	}
+
+	.subtitle {
+		font-size: 19px;
+		line-height: 30px;
+	}
+
+	.def-text {
+		font-size: 16px;
+		font-weight: 500;
+		color: #F2EDE9B3;
+		line-height: 27px;
+	}
+
+	.genres {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		margin: 50px 0 0;
+	}
+
+	.genres__item {
+		border: 1px solid var(--color-burnt-orange);
+		color: var(--color-burnt-orange);
+		font-size: 14px;
+		font-weight: 500;
+		padding: 8px 13px;
+	}
+
+	.about-me__info {
+		max-width: 752px;
+		width: 100%;
+	}
+
+	.about-me__photos {
+		position: relative;
+		display: grid;
+		overflow: hidden;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
