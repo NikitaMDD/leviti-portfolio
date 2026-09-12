@@ -1,0 +1,36 @@
+.imageWrapper {
+    position: relative;
+    grid-area: 1 / 1;
+    max-width: 500px;
+    max-height: 656px;
+    min-width: 227px;
+    min-height: 227px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* дефолтное состояние до первого взаимодействия со скроллом —
+   дальше видимостью управляет GSAP инлайн-стилями из index.astro */
+.imageWrapper:first-child {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.imageWrapper img {
+    max-width: 500px;
+    max-height: 656px;
+    min-width: 227px;
+    min-height: 227px;
+}
+
+.photoClue {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: rgba(26, 44, 48, 0.5);
+    /*background: rgba(254, 126, 60, 0.1);*/
+    color: white;
+    font-size: 10px;
+    font-weight: 400;
+    padding: 30px 20px;
+}
