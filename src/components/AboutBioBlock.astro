@@ -13,19 +13,45 @@
 </p>
 
 <h4 class="about-bio__genres-title">Жанры:</h4>
+<!-- на десктопе — обычный wrap-список (.genres__track/.genres__group на
+	 display:contents, продублированная группа скрыта, см. стили ниже).
+	 На мобильном (≤700px) — бегущая строка: список не помещается по высоте
+	 на реальных телефонах (напр. iPhone 15) и упирается в 100svh секции
+	 "о себе", а бегущая строка занимает всего одну строку и не требует
+	 скролла вообще. Группа продублирована для бесшовной петли анимации —
+	 трек едет ровно на ширину одной группы и оказывается в той же точке -->
+
 <div class="genres">
-	<div class="genres__item">uk garage</div>
-	<div class="genres__item">electronic</div>
-	<div class="genres__item">house</div>
-	<div class="genres__item">jazz house</div>
-	<div class="genres__item">funky house</div>
-	<div class="genres__item">deep</div>
-	<div class="genres__item">tech house</div>
-	<div class="genres__item">bass music</div>
-	<div class="genres__item">nu-disco</div>
-	<div class="genres__item">dubstep</div>
-	<div class="genres__item">dnb</div>
-	<div class="genres__item">pop в ремиксах</div>
+	<div class="genres__track">
+		<div class="genres__group">
+			<div class="genres__item">uk garage</div>
+			<div class="genres__item">electronic</div>
+			<div class="genres__item">house</div>
+			<div class="genres__item">jazz house</div>
+			<div class="genres__item">funky house</div>
+			<div class="genres__item">deep</div>
+			<div class="genres__item">tech house</div>
+			<div class="genres__item">bass music</div>
+			<div class="genres__item">nu-disco</div>
+			<div class="genres__item">dubstep</div>
+			<div class="genres__item">dnb</div>
+			<div class="genres__item">pop в ремиксах</div>
+		</div>
+		<div class="genres__group" aria-hidden="true">
+			<div class="genres__item">uk garage</div>
+			<div class="genres__item">electronic</div>
+			<div class="genres__item">house</div>
+			<div class="genres__item">jazz house</div>
+			<div class="genres__item">funky house</div>
+			<div class="genres__item">deep</div>
+			<div class="genres__item">tech house</div>
+			<div class="genres__item">bass music</div>
+			<div class="genres__item">nu-disco</div>
+			<div class="genres__item">dubstep</div>
+			<div class="genres__item">dnb</div>
+			<div class="genres__item">pop в ремиксах</div>
+		</div>
+	</div>
 </div>
 
 <style>
@@ -58,6 +84,19 @@
 		margin: 20px 0 0;
 	}
 
+	/* на десктопе трек/группа не создают собственной раскладки — их дети
+	   становятся обычными flex-элементами .genres, как будто обёрток нет */
+	.genres__track,
+	.genres__group {
+		display: contents;
+	}
+
+	/* продублированная группа (нужна только для бесшовной петли бегущей
+	   строки на мобильном) на десктопе просто не рендерится */
+	.genres__group:last-child {
+		display: none;
+	}
+
 	.genres__item {
 		border: 1px solid var(--color-burnt-orange);
 		color: var(--color-burnt-orange);
@@ -74,6 +113,62 @@
 
 		.about-bio__genres-title {
 			margin-top: 24px;
+		}
+
+		/* бегущая строка вместо wrap-списка — список жанров не помещается по
+		   высоте на реальных телефонах (см. комментарий у разметки выше) */
+		.genres {
+			display: block;
+			overflow: hidden;
+			width: 100%;
+			margin: 20px calc(-1 * var(--space-4)) 0;
+			-webkit-mask-image: linear-gradient(90deg, transparent, black 24px, black calc(100% - 24px), transparent);
+			mask-image: linear-gradient(90deg, transparent, black 24px, black calc(100% - 24px), transparent);
+		}
+
+		.genres__track {
+			display: flex;
+			width: max-content;
+			animation: genresMarquee 26s linear infinite;
+		}
+
+		.genres__group {
+			display: flex;
+			flex: 0 0 auto;
+			gap: 8px;
+			padding: 0 var(--space-4);
+		}
+
+		.genres__group:last-child {
+			display: flex;
+		}
+
+		.genres__item {
+			flex: 0 0 auto;
+			white-space: nowrap;
+		}
+
+		@keyframes genresMarquee {
+			from {
+				transform: translateX(0);
+			}
+			to {
+				/* ровно ширина одной группы (трек = 2 группы) — точка, где
+				   дубль занимает место оригинала, петля незаметна */
+				transform: translateX(-50%);
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.genres {
+				overflow-x: auto;
+				-webkit-mask-image: none;
+				mask-image: none;
+			}
+
+			.genres__track {
+				animation: none;
+			}
 		}
 	}
 </style>
