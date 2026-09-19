@@ -12,6 +12,16 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# не нужные файлы в аудио
+public/audio/test-mix.mp3
+
+# не нужные файлы в фото
+public/photo/dj3.jpg
+public/photo/dj4.jpg
+public/photo/stick.jpg
+
+# не нужные страницы
+src/pages/preview-about.astro
 
 # environment variables
 .env
