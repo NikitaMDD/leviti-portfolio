@@ -120,6 +120,14 @@
     animation: scrollHintMove 1.8s ease-in-out infinite;
 }
 
+/* последнее фото — стрелка уже смотрит в обратную сторону (см. path в
+   ImageContainer.tsx), тут только разворачиваем движение: та же keyframe,
+   проигранная в обратном порядке, едет от 16px к 0 — то есть вверх, а на
+   мобильном, где вся капсула повёрнута на -90deg, это превращается в влево */
+.scrollHintArrowReverse {
+    animation-direction: reverse;
+}
+
 @keyframes scrollHintMove {
     0% {
         transform: translateY(0);
