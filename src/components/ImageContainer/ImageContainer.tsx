@@ -25,6 +25,13 @@ export const ImageContainer = ({
                     </div>
                     : null
             }
+            <div className={classes.scrollHint} aria-hidden="true">
+                <div className={classes.scrollHintPill}>
+                    <svg className={classes.scrollHintArrow} width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M1.5 3.5 L5 7 L8.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </div>
+            </div>
         </div>
     );
 };

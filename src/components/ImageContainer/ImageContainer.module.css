@@ -1,21 +1,25 @@
+/* десктоп: фото на весь бокс .about-me__photos (тот сам задаёт размер через
+   aspect-ratio), видимость/кроссфейд — JS (opacity, см. showDesktopPhoto) */
 .imageWrapper {
-    position: relative;
-    grid-area: 1 / 1;
-    width: 100%;
-    max-width: 420px;
-    aspect-ratio: 3 / 4;
+    position: absolute;
+    inset: 0;
     border: 1px solid var(--color-copper);
     overflow: hidden;
     background: #000;
-    opacity: 0;
-    pointer-events: none;
 }
 
-/* дефолтное состояние до первого взаимодействия со скроллом —
-   дальше видимостью управляет GSAP инлайн-стилями из index.astro */
-.imageWrapper:first-child {
-    opacity: 1;
-    pointer-events: auto;
+/* мобильный слайдер (.about-me__photos на 700px и ниже) — каждое фото
+   занимает весь стоп, показано ровно одно за раз, переключает JS (см.
+   aboutPhotoSlides / showAboutPhoto в <script> у index.astro) */
+@media (max-width: 700px) {
+    .imageWrapper {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        aspect-ratio: auto;
+        border: none;
+    }
 }
 
 .imageWrapper img {
@@ -83,5 +87,72 @@
 @media (prefers-reduced-motion: reduce) {
     .photoClueDot {
         animation: none;
+    }
+}
+
+/* подсказка "куда скроллить" — капсула-мышка со стрелкой, уезжающей в
+   сторону, в которую нужно скроллить/свайпать (см. klepikov.ws). На
+   десктопе это вниз (там фото листаются колесом, см. handleAboutDesktopScroll
+   в index.astro), на мобильном — вбок (свайп по aboutPhotoSlides) */
+.scrollHint {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    z-index: 3;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.scrollHintPill {
+    box-sizing: border-box;
+    width: 26px;
+    height: 42px;
+    display: flex;
+    justify-content: center;
+    padding-top: 8px;
+    border: 1.5px solid #FE7E3C;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.scrollHintArrow {
+    color: #FE7E3C;
+    animation: scrollHintMove 1.8s ease-in-out infinite;
+}
+
+@keyframes scrollHintMove {
+    0% {
+        transform: translateY(0);
+        opacity: 0;
+    }
+    35% {
+        opacity: 1;
+    }
+    65% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(16px);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scrollHintArrow {
+        animation: none;
+        opacity: 0.7;
+    }
+}
+
+/* на мобильном фото листаются свайпом вбок, а не скроллом вниз — разворачиваем
+   капсулу и стрелку на 90°, тот же keyframe (translateY в локальных
+   координатах повёрнутого элемента) визуально даёт движение вбок */
+@media (max-width: 700px) {
+    .scrollHint {
+        bottom: 24px;
+    }
+
+    .scrollHintPill {
+        transform: rotate(-90deg);
     }
 }
