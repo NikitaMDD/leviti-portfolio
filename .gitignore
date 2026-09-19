@@ -20,8 +20,9 @@ public/photo/dj3.jpg
 public/photo/dj4.jpg
 public/photo/stick.jpg
 
-# не нужные страницы
+# не нужные страницы и компоненты
 src/pages/preview-about.astro
+src/components/HeroShader.tsx
 
 # environment variables
 .env
