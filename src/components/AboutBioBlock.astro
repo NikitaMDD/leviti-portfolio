@@ -1,0 +1,79 @@
+---
+// Био + жанры секции "о себе" — вынесены отдельным компонентом просто чтобы
+// не загромождать разметку страницы длинным текстом/списком жанров.
+---
+
+<div class="about-bio__rule" aria-hidden="true"></div>
+
+<p class="about-bio__text">
+	Лауреат премии Правительства Тульской области в номинации «Профессиональное мастерство».
+	Резидент баров «Гадальня» и «Флигель», играю в Park Hotel «Золотой город» на Китай-городе,
+	шоуруме ОДМО и рестобарах Москвы. Программу собираю под площадку и аудиторию — сет на закрытом
+	ужине и сет в клубе устроены по-разному.
+</p>
+
+<h4 class="about-bio__genres-title">Жанры:</h4>
+<div class="genres">
+	<div class="genres__item">uk garage</div>
+	<div class="genres__item">electronic</div>
+	<div class="genres__item">house</div>
+	<div class="genres__item">jazz house</div>
+	<div class="genres__item">funky house</div>
+	<div class="genres__item">deep</div>
+	<div class="genres__item">tech house</div>
+	<div class="genres__item">bass music</div>
+	<div class="genres__item">nu-disco</div>
+	<div class="genres__item">dubstep</div>
+	<div class="genres__item">dnb</div>
+	<div class="genres__item">pop в ремиксах</div>
+</div>
+
+<style>
+	.about-bio__rule {
+		width: 48px;
+		height: 2px;
+		background: var(--color-burnt-orange);
+		margin: 0 0 var(--space-6);
+	}
+
+	.about-bio__text {
+		font-family: var(--font-body);
+		font-size: 16px;
+		font-weight: 500;
+		color: #F2EDE9B3;
+		line-height: 1.7;
+		margin: 0 0 var(--space-7);
+		max-width: 560px;
+	}
+
+	.about-bio__genres-title {
+		margin: 50px 0 0;
+	}
+
+	.genres {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		margin: 20px 0 0;
+	}
+
+	.genres__item {
+		border: 1px solid var(--color-burnt-orange);
+		color: var(--color-burnt-orange);
+		font-size: 14px;
+		font-weight: 500;
+		padding: 8px 13px;
+	}
+
+	@media (max-width: 700px) {
+		.about-bio__text {
+			font-size: 15px;
+			max-width: 100%;
+		}
+
+		.about-bio__genres-title {
+			margin-top: 24px;
+		}
+	}
+</style>
