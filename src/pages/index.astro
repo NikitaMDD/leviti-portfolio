@@ -11,6 +11,11 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 
 <Layout>
 	<NavBar links={['Главная', 'Миксы', 'О себе', 'Ивенты', 'Контакты']} client:idle />
+	<!-- вне #page-shell намеренно: это position:fixed элемент, а transform на
+	предке меняет его containing block — если оставить его внутри сдвигаемой
+	обёртки, "LEVITI" укатится вместе со страницей при открытом мобильном меню -->
+	<h1 class="hero__title hero__title--pinned" id="hero-title">LEVITI</h1>
+	<div id="page-shell">
 	<section class="hero is-animating" id="hero">
 		<!--<HeroLine client:load />-->
 		<!--<HeroR3F client:load />-->
@@ -27,7 +32,6 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 				<button id="test-play" class="hero__mix-btn"> <PlayPauseIcon playing={false} /> Слушать миксы</button>
 			</div>
 		</div>
-		<h1 class="hero__title hero__title--pinned" id="hero-title">LEVITI</h1>
 	</section>
 
 	<Placeholder background="BLACK" placeholderText="MIXES" />
@@ -73,6 +77,7 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 				<div class="genres__item">pop в ремиксах</div>
 			</div>
 		</div>
+		<div class="about-me__photo-block">
 		<div class="about-me__photos" id="about-photos">
 			<ImageContainer
 				src="/photo/dj.jpg"
@@ -115,11 +120,14 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 				description="REC · 08/08"
 			/>
 		</div>
+		<div class="about-me__dots" id="about-photos-dots" aria-hidden="true"></div>
+		</div>
 	</section>
 
 	<Placeholder background="BLACK" placeholderText="EVENTS" />
 
 	<Placeholder background="BLACK" placeholderText="BOOKING"/>
+	</div>
 
 </Layout>
 
@@ -172,6 +180,13 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		if (navSlot) titleTargetRect = navSlot.getBoundingClientRect();
 	}
 
+	// Пока заголовок ещё не пристыковался к навбару, он визуально — часть
+	// содержимого hero (просто вынесен из #page-shell из-за position:fixed +
+	// containing block), поэтому при открытии мобильного меню должен уезжать
+	// влево вместе со страницей. Как только он осел в баре как логотип —
+	// становится частью самого бара и меню его больше не трогает.
+	const menuShiftState = { v: 0 };
+
 	function applyStickyTitle(scrollY: number) {
 		if (!title || !titleStartRect || !titleTargetRect) return;
 
@@ -186,7 +201,8 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 
 		if (scrollY <= dockThreshold) {
 			const y = titleStartRect.top - scrollY;
-			title.style.transform = `translate(${titleStartRect.left}px, ${y}px) scale(1)`;
+			const x = titleStartRect.left - menuShiftState.v;
+			title.style.transform = `translate(${x}px, ${y}px) scale(1)`;
 			return;
 		}
 
@@ -324,9 +340,31 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 	let photoIndex = 0;
 	let photoAnimating = false;
 
+	// на мобильном ширина макета определяет и раскладку (CSS), и модель
+	// взаимодействия (JS) — держим оба на одном брейкпоинте
+	function isCompactLayout() {
+		return window.matchMedia("(max-width: 860px)").matches;
+	}
+
 	function isAboutSection(index: number) {
 		return sections[index]?.classList.contains("about-me") ?? false;
 	}
+
+	const dotsContainer = document.getElementById("about-photos-dots");
+	const dots = aboutPhotos.map((_, i) => {
+		const dot = document.createElement("button");
+		dot.type = "button";
+		dot.setAttribute("aria-label", `Фото ${i + 1} из ${aboutPhotos.length}`);
+		dot.addEventListener("click", () => showPhoto(i));
+		dotsContainer?.appendChild(dot);
+		return dot;
+	});
+
+	function updateDots(index: number) {
+		dots.forEach((dot, i) => dot.classList.toggle("is-active", i === index));
+	}
+
+	updateDots(0);
 
 	function setPhotoInstant(index: number) {
 		photoIndex = Math.max(0, Math.min(index, aboutPhotos.length - 1));
@@ -337,6 +375,7 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 				pointerEvents: i === photoIndex ? "auto" : "none",
 			});
 		});
+		updateDots(photoIndex);
 	}
 
 	function showPhoto(nextIndex: number) {
@@ -362,6 +401,7 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 			.to(next, { yPercent: 0, opacity: 1 }, 0);
 
 		photoIndex = nextIndex;
+		updateDots(photoIndex);
 	}
 
 	function handleAboutScroll(direction: 1 | -1) {
@@ -385,6 +425,14 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 
 		if (isAboutSection(currentIndex)) {
 			setPhotoInstant(enteringForward ? 0 : aboutPhotos.length - 1);
+
+			// на мобильном у секции свой внутренний скролл (контент выше экрана) —
+			// при входе в секцию ставим его в начало/конец по направлению входа,
+			// иначе можно попасть в середину чужого скролл-состояния
+			if (isCompactLayout()) {
+				const aboutEl = sections[currentIndex] as HTMLElement;
+				aboutEl.scrollTop = enteringForward ? 0 : aboutEl.scrollHeight;
+			}
 		}
 
 		lenis.scrollTo(sections[currentIndex], {
@@ -403,6 +451,23 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 	window.addEventListener('nav:goto', (e: Event) => {
 		const { index } = (e as CustomEvent<{index: number}>).detail;
 		goToSection(index);
+	})
+
+	// «выдвижное» мобильное меню в NavBar сообщает о своём состоянии сюда —
+	// страница отъезжает влево (см. CSS #page-shell), открывая панель меню
+	const pageShell = document.getElementById("page-shell");
+	const mobileMenuEl = document.querySelector<HTMLElement>("[data-mobile-menu]");
+
+	window.addEventListener('nav:menu', (e: Event) => {
+		const { open } = (e as CustomEvent<{ open: boolean }>).detail;
+		pageShell?.classList.toggle("is-menu-open", open);
+
+		// ширина панели меню фиксирована (var(--menu-width)), меняется только её
+		// translateX — поэтому актуальную ширину можно смело брать сразу, не
+		// дожидаясь конца CSS-перехода
+		const target = open ? (mobileMenuEl?.getBoundingClientRect().width ?? 0) : 0;
+		gsap.killTweensOf(menuShiftState);
+		gsap.to(menuShiftState, { v: target, duration: 0.4, ease: "expo.out" });
 	})
 
 	window.addEventListener("wheel", (e) => {
@@ -424,8 +489,41 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		const deltaY = touchStartY - e.changedTouches[0].clientY;
 		if (Math.abs(deltaY) < 30) return;
 		const direction = deltaY > 0 ? 1 : -1;
+
+		// «О себе» на мобильном скроллится свободно внутри своего экрана (контент
+		// выше 100svh) — свайп двигает её нативным скроллом сам по себе, к смене
+		// секции переходим только когда упёрлись в начало/конец этого скролла
+		if (isAboutSection(currentIndex) && isCompactLayout()) {
+			const aboutEl = sections[currentIndex] as HTMLElement;
+			const atTop = aboutEl.scrollTop <= 1;
+			const atBottom = aboutEl.scrollTop + aboutEl.clientHeight >= aboutEl.scrollHeight - 1;
+			if (direction === 1 && !atBottom) return;
+			if (direction === -1 && !atTop) return;
+			goToSection(currentIndex + direction);
+			return;
+		}
+
 		if (handleAboutScroll(direction)) return;
 		goToSection(currentIndex + direction);
+	}, {passive: true});
+
+	// свайп по фото — отдельный горизонтальный жест, не завязан на вертикальную
+	// пагинацию страницы (маленький deltaY у горизонтального свайпа сам не
+	// пройдёт порог в 30px у обработчика выше, конфликта нет)
+	let photoTouchStartX = 0;
+	const aboutPhotosEl = document.getElementById("about-photos");
+
+	aboutPhotosEl?.addEventListener("touchstart", (e: TouchEvent) => {
+		photoTouchStartX = e.touches[0].clientX;
+	}, {passive: true});
+
+	aboutPhotosEl?.addEventListener("touchend", (e: TouchEvent) => {
+		if (photoAnimating) return;
+		const deltaX = photoTouchStartX - e.changedTouches[0].clientX;
+		if (Math.abs(deltaX) < 40) return;
+		const direction = deltaX > 0 ? 1 : -1;
+		const next = Math.max(0, Math.min(photoIndex + direction, aboutPhotos.length - 1));
+		showPhoto(next);
 	}, {passive: true});
 
 </script>
@@ -759,20 +857,114 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		padding: 8px 13px;
 	}
 
-	.about-me__photos {
+	.about-me__photo-block {
 		position: relative;
 		z-index: 1;
-		display: grid;
-		overflow: hidden;
 		width: 100%;
 		max-width: 420px;
 		flex: 0 0 auto;
+	}
+
+	.about-me__photos {
+		position: relative;
+		display: grid;
+		overflow: hidden;
+		width: 100%;
+	}
+
+	.about-me__dots {
+		display: none;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		margin-top: var(--space-4);
+	}
+
+	.about-me__dots button {
+		width: 6px;
+		height: 6px;
+		padding: 0;
+		border: 1px solid var(--color-copper);
+		border-radius: 50%;
+		background: transparent;
+		cursor: pointer;
+		transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+	}
+
+	.about-me__dots button.is-active {
+		background: var(--color-burnt-orange);
+		border-color: var(--color-burnt-orange);
+		transform: scale(1.3);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		.hero__bars span {
 			animation: none;
 			transform: scaleY(0.7);
+		}
+	}
+
+	/* ===== мобильная адаптация ===== */
+
+	@media (max-width: 860px) {
+		#page-shell {
+			transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+		}
+
+		#page-shell.is-menu-open {
+			transform: translateX(calc(-1 * var(--menu-width)));
+		}
+
+		.hero {
+			padding: var(--space-5) var(--space-4);
+		}
+
+		.hero__title {
+			font-size: clamp(2.75rem, 13vw, 4rem);
+		}
+
+		.hero__desc {
+			max-width: 100%;
+		}
+
+		.about-me {
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			justify-content: flex-start;
+			height: 100svh;
+			overflow-y: auto;
+			overscroll-behavior-y: contain;
+			-webkit-overflow-scrolling: touch;
+			gap: var(--space-6);
+			padding: var(--space-7) var(--space-4);
+		}
+
+		.about-me__photo-block {
+			order: -1;
+			max-width: 340px;
+			margin: 0 auto;
+		}
+
+		.about-me__dots {
+			display: flex;
+		}
+
+		.about-me__info {
+			max-width: 100%;
+		}
+
+		.about-me__title {
+			font-size: clamp(2.25rem, 11vw, 3rem);
+		}
+
+		.def-text {
+			font-size: 15px;
+			max-width: 100%;
+		}
+
+		.about-me__bg-mark text {
+			font-size: clamp(5rem, 30vw, 9rem);
 		}
 	}
 </style>

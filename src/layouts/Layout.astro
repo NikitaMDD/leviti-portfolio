@@ -13,7 +13,8 @@ const { title = "leviti — performance dj" } = Astro.props
 <html>
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1A2C30" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -60,14 +61,23 @@ const { title = "leviti — performance dj" } = Astro.props
         --space-8: 64px;
         --space-9: 96px;
         --space-10: 128px;
+
+        /* ширина мобильного меню — общая для NavBar (сама панель) и
+           page-shell в index.astro (на столько же сдвигается контент) */
+        --menu-width: min(300px, 78vw);
     }
 
     * {
         box-sizing: border-box;
     }
 
+    html {
+        overflow-x: hidden;
+    }
+
     body {
         margin: 0;
+        overflow-x: hidden;
         background: var(--color-black-pearl);
         color: var(--color-title);
         font-family: var(--font-body);

@@ -10,6 +10,7 @@ export default function PlayerBar() {
     const playing = useStore(isPlaying);
     const { current, duration } = useStore(playback);
     const [expanded, setExpanded] = useState(false);
+    const [isTouch, setIsTouch] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
@@ -18,6 +19,17 @@ export default function PlayerBar() {
     const lastValuesRef = useRef<number[]>([0, 0, 0, 0, 0, 0]);
 
     const BAND_COUNT = 6;
+
+    // hover недоступен на тач-устройствах — там плеер держим развёрнутым
+    // постоянно, как обычный мини-плеер, а не по наведению
+    useEffect(() => {
+        const mq = window.matchMedia("(hover: none)");
+        setIsTouch(mq.matches);
+    }, []);
+
+    useEffect(() => {
+        if (isTouch && track) setExpanded(true);
+    }, [isTouch, track]);
 
     useEffect(() => {
         const audio = audioRef.current;
@@ -91,8 +103,8 @@ export default function PlayerBar() {
 
     return (
         <div
-            onMouseEnter={() => setExpanded(true)}
-            onMouseLeave={() => setExpanded(false)}
+            onMouseEnter={isTouch ? undefined : () => setExpanded(true)}
+            onMouseLeave={isTouch ? undefined : () => setExpanded(false)}
             style={{ position: "fixed", left: 0, right: 0, bottom: 0, height: 16, zIndex: 50 }}
         >
             <audio ref={audioRef} />
@@ -187,6 +199,18 @@ export default function PlayerBar() {
                 .leviti-seek.is-expanded::-moz-range-thumb {
                     opacity: 1;
                 }
+
+                @media (hover: none) {
+                    .leviti-seek.is-expanded::-webkit-slider-thumb {
+                        width: 18px;
+                        height: 18px;
+                    }
+                    .leviti-seek.is-expanded::-moz-range-thumb {
+                        width: 18px;
+                        height: 18px;
+                        border-radius: 50%;
+                    }
+                }
             `}</style>
 
             {track && (
@@ -200,7 +224,7 @@ export default function PlayerBar() {
                         alignItems: "center",
                         justifyContent: "space-between",
                         gap: "var(--space-4)",
-                        padding: "var(--space-4) var(--space-5)",
+                        padding: "var(--space-4) var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom))",
                         background: "var(--color-black-pearl)",
                         borderTop: "1px solid var(--color-copper)",
                         fontFamily: "var(--font-mono)",
@@ -210,8 +234,16 @@ export default function PlayerBar() {
                     }}
                 >
                     <>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <span>{track.title}</span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flex: 1 }}>
+                            <span
+                                style={{
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                }}
+                            >
+                                {track.title}
+                            </span>
                             <span style={{ fontSize: 12, color: "var(--color-title)" }}>
                                 {formatTime(current)} / {formatTime(duration)}
                             </span>
@@ -223,10 +255,12 @@ export default function PlayerBar() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
+                                flexShrink: 0,
                                 background: "none",
                                 border: "none",
                                 cursor: "pointer",
-                                padding: 0,
+                                padding: 8,
+                                margin: -8,
                             }}
                         >
                             <PlayPauseIcon playing={playing} />
