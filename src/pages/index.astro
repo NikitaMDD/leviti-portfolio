@@ -85,6 +85,7 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 				src="/photo/Левити_156.jpg"
 				alt="фото Оли 6"
 				description="REC · 06/06"
+				isLast
 			/>
 			<!--<ImageContainer-->
 			<!--	src="/photo/Левити_214 (1).jpg"-->
@@ -353,8 +354,12 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 	// начальное состояние выставляем один раз сразу — дальше индекс не
 	// сбрасывается ни при переключении стопов, ни при уходе/возврате в
 	// секцию (см. goToSection/showAboutStop): пользователь должен вернуться
-	// ровно на то фото, где остановился
-	setAboutPhotoInstant(0);
+	// ровно на то фото, где остановился. Только на мобильном — на десктопе
+	// эти же DOM-узлы использует showDesktopPhoto через yPercent, и если
+	// здесь выставить ещё и xPercent, GSAP сложит оба в один transform:
+	// фото 2+ останутся сдвинутыми на 100% вбок даже после того, как
+	// desktop-логика анимирует yPercent/opacity — снаружи будет пусто
+	if (isCompactLayout()) setAboutPhotoInstant(0);
 
 	function showAboutPhoto(nextIndex: number) {
 		if (aboutPhotoAnimating || nextIndex === aboutPhotoIndex) return;
@@ -474,6 +479,7 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 		if (compactNow) {
 			gsap.set(aboutPhotosDesktop, { clearProps: "transform,opacity,pointerEvents" });
 			setAboutStopInstant(0);
+			setAboutPhotoInstant(0);
 		} else {
 			gsap.set(aboutStops, { clearProps: "transform,zIndex,pointerEvents" });
 			gsap.set(aboutPhotoSlides, { clearProps: "transform,pointerEvents" });
