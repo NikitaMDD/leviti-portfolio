@@ -7,6 +7,7 @@ import Placeholder from "../components/Placeholder.astro";
 import {ImageContainer} from "../components/ImageContainer";
 import { NavBar } from "../components/NavBar";
 import PlayPauseIcon from "../components/PlayPauseIcon";
+import AboutBioBlock from "../components/AboutBioBlock.astro";
 ---
 
 <Layout>
@@ -52,75 +53,49 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 				<span>лауреат премии</span>
 			</div>
 
-			<div class="about-me__rule" aria-hidden="true"></div>
-
-			<p class="def-text">
-				Лауреат премии Правительства Тульской области в номинации «Профессиональное мастерство».
-				Резидент баров «Гадальня» и «Флигель», играю в Park Hotel «Золотой город» на Китай-городе,
-				шоуруме ОДМО и рестобарах Москвы. Программу собираю под площадку и аудиторию — сет на закрытом
-				ужине и сет в клубе устроены по-разному.
-			</p>
-
-			<h4>Жанры:</h4>
-			<div class="genres">
-				<div class="genres__item">uk garage</div>
-				<div class="genres__item">electronic</div>
-				<div class="genres__item">house</div>
-				<div class="genres__item">jazz house</div>
-				<div class="genres__item">funky house</div>
-				<div class="genres__item">deep</div>
-				<div class="genres__item">tech house</div>
-				<div class="genres__item">bass music</div>
-				<div class="genres__item">nu-disco</div>
-				<div class="genres__item">dubstep</div>
-				<div class="genres__item">dnb</div>
-				<div class="genres__item">pop в ремиксах</div>
-			</div>
+			<AboutBioBlock />
 		</div>
-		<div class="about-me__photo-block">
-		<div class="about-me__photos" id="about-photos">
+		<div class="about-me__photos">
 			<ImageContainer
 				src="/photo/dj.jpg"
 				alt="фото Оли 1"
-				description="REC · 01/08"
+				description="REC · 01/06"
 			/>
 			<ImageContainer
 				src="/photo/InCollage_20260915_215629068.png"
 				alt="фото Оли 2"
-				description="REC · 02/08"
+				description="REC · 02/06"
 			/>
 			<ImageContainer
 				src="/photo/Левити_50.jpg"
 				alt="фото Оли 3"
-				description="REC · 03/08"
+				description="REC · 03/06"
 			/>
 			<ImageContainer
 				src="/photo/Левити_51.JPG"
 				alt="фото Оли 4"
-				description="REC · 04/08"
+				description="REC · 04/06"
 			/>
 			<ImageContainer
 				src="/photo/Левити_64.jpg"
 				alt="фото Оли 5"
-				description="REC · 05/08"
+				description="REC · 05/06"
 			/>
 			<ImageContainer
 				src="/photo/Левити_156.jpg"
 				alt="фото Оли 6"
-				description="REC · 06/08"
+				description="REC · 06/06"
 			/>
-			<ImageContainer
-				src="/photo/Левити_214 (1).jpg"
-				alt="фото Оли 7"
-				description="REC · 07/08"
-			/>
-			<ImageContainer
-				src="/photo/Левити_228.jpg"
-				alt="фото Оли 8"
-				description="REC · 08/08"
-			/>
-		</div>
-		<div class="about-me__dots" id="about-photos-dots" aria-hidden="true"></div>
+			<!--<ImageContainer-->
+			<!--	src="/photo/Левити_214 (1).jpg"-->
+			<!--	alt="фото Оли 7"-->
+			<!--	description="REC · 07/08"-->
+			<!--/>-->
+			<!--<ImageContainer-->
+			<!--	src="/photo/Левити_228.jpg"-->
+			<!--	alt="фото Оли 8"-->
+			<!--	description="REC · 08/08"-->
+			<!--/>-->
 		</div>
 	</section>
 
@@ -334,59 +309,132 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 	let currentIndex = 0;
 	let isAnimating = false;
 
-	const aboutPhotos = Array.from(
-		document.querySelectorAll<HTMLElement>("#about-photos .js-about-photo")
-	);
-	let photoIndex = 0;
-	let photoAnimating = false;
-
-	// на мобильном ширина макета определяет и раскладку (CSS), и модель
-	// взаимодействия (JS) — держим оба на одном брейкпоинте
-	function isCompactLayout() {
-		return window.matchMedia("(max-width: 860px)").matches;
-	}
-
 	function isAboutSection(index: number) {
 		return sections[index]?.classList.contains("about-me") ?? false;
 	}
 
-	const dotsContainer = document.getElementById("about-photos-dots");
-	const dots = aboutPhotos.map((_, i) => {
-		const dot = document.createElement("button");
-		dot.type = "button";
-		dot.setAttribute("aria-label", `Фото ${i + 1} из ${aboutPhotos.length}`);
-		dot.addEventListener("click", () => showPhoto(i));
-		dotsContainer?.appendChild(dot);
-		return dot;
-	});
-
-	function updateDots(index: number) {
-		dots.forEach((dot, i) => dot.classList.toggle("is-active", i === index));
+	// на узких экранах ширина макета определяет и раскладку (CSS-медиазапрос
+	// на 700px), и то, включена ли ниже логика переключения стопов — держим
+	// оба на одном брейкпоинте
+	function isCompactLayout() {
+		return window.matchMedia("(max-width: 700px)").matches;
 	}
 
-	updateDots(0);
+	// мобильный "стоп" внутри секции "о себе": текст -> фото, лежат друг на
+	// друге (см. CSS про .about-me__info/.about-me__photos в @media 700px) и
+	// переключаются тем же тиком скролла/свайпа, что листает секции страницы.
+	// На десктопе (isCompactLayout() === false) эта пара вообще не трогается —
+	// там текст и фото это просто обычный поток, см. базовые стили .about-me.
+	const aboutStops = [
+		document.querySelector<HTMLElement>(".about-me__info"),
+		document.querySelector<HTMLElement>(".about-me__photos"),
+	].filter((el): el is HTMLElement => el !== null);
+	let aboutStopIndex = 0;
+	let aboutStopAnimating = false;
 
-	function setPhotoInstant(index: number) {
-		photoIndex = Math.max(0, Math.min(index, aboutPhotos.length - 1));
-		aboutPhotos.forEach((photo, i) => {
-			gsap.set(photo, {
-				opacity: i === photoIndex ? 1 : 0,
-				yPercent: 0,
-				pointerEvents: i === photoIndex ? "auto" : "none",
+	// внутри фото-стопа — свой горизонтальный трек отдельных фото, той же
+	// анимацией/easing, что и переключение текст<->фото ниже
+	const aboutPhotoSlides = Array.from(
+		document.querySelectorAll<HTMLElement>(".about-me__photos .js-about-photo")
+	);
+	let aboutPhotoIndex = 0;
+	let aboutPhotoAnimating = false;
+
+	function setAboutPhotoInstant(index: number) {
+		aboutPhotoIndex = Math.max(0, Math.min(index, aboutPhotoSlides.length - 1));
+		aboutPhotoSlides.forEach((el, i) => {
+			gsap.set(el, {
+				xPercent: i === aboutPhotoIndex ? 0 : i < aboutPhotoIndex ? -100 : 100,
+				pointerEvents: i === aboutPhotoIndex ? "auto" : "none",
 			});
 		});
-		updateDots(photoIndex);
 	}
 
-	function showPhoto(nextIndex: number) {
-		if (photoAnimating || nextIndex === photoIndex) return;
+	// начальное состояние выставляем один раз сразу — дальше индекс не
+	// сбрасывается ни при переключении стопов, ни при уходе/возврате в
+	// секцию (см. goToSection/showAboutStop): пользователь должен вернуться
+	// ровно на то фото, где остановился
+	setAboutPhotoInstant(0);
 
-		const current = aboutPhotos[photoIndex];
-		const next = aboutPhotos[nextIndex];
-		const goingForward = nextIndex > photoIndex;
+	function showAboutPhoto(nextIndex: number) {
+		if (aboutPhotoAnimating || nextIndex === aboutPhotoIndex) return;
+		if (nextIndex < 0 || nextIndex > aboutPhotoSlides.length - 1) return;
+
+		const current = aboutPhotoSlides[aboutPhotoIndex];
+		const next = aboutPhotoSlides[nextIndex];
+		const goingForward = nextIndex > aboutPhotoIndex;
+		const duration = prefersReducedMotion ? 0 : 0.9;
+
+		aboutPhotoAnimating = true;
+		gsap.set(next, { xPercent: goingForward ? 100 : -100, pointerEvents: "none" });
+
+		gsap.timeline({
+			defaults: { duration, ease: easeInOutQuint },
+			onComplete: () => {
+				gsap.set(current, { pointerEvents: "none" });
+				gsap.set(next, { pointerEvents: "auto" });
+				aboutPhotoAnimating = false;
+			},
+		})
+			.to(current, { xPercent: goingForward ? -100 : 100 }, 0)
+			.to(next, { xPercent: 0 }, 0);
+
+		aboutPhotoIndex = nextIndex;
+	}
+
+	function setAboutStopInstant(index: number) {
+		aboutStopIndex = Math.max(0, Math.min(index, aboutStops.length - 1));
+		aboutStops.forEach((el, i) => {
+			gsap.set(el, {
+				xPercent: i === aboutStopIndex ? 0 : i < aboutStopIndex ? -100 : 100,
+				zIndex: i === aboutStopIndex ? 2 : 1,
+				pointerEvents: i === aboutStopIndex ? "auto" : "none",
+			});
+		});
+	}
+
+	if (isCompactLayout()) setAboutStopInstant(0);
+
+	// если ширина экрана переходит через 700px (ресайз окна, поворот
+	// телефона) — либо выставляем стопы заново под мобильный режим, либо
+	// снимаем инлайн-стили, чтобы не мешать обычному desktop-потоку
+	// ===== десктоп (не адаптив) =====
+	// раньше на каждый тик скролла вниз/вверх по секции "о себе" на десктопе
+	// менялось текущее фото (вертикальный кроссфейд) — эффект потерялся,
+	// когда секцию упростили в обычный поток со статичной сеткой миниатюр.
+	// Восстанавливаем его тут отдельно от мобильной карусели выше — те же
+	// DOM-узлы (.js-about-photo), но полностью свой набор состояния и своя
+	// анимация (yPercent вместо xPercent), не пересекается с мобильной вообще,
+	// т.к. включается только при !isCompactLayout()
+	const aboutPhotosDesktop = Array.from(
+		document.querySelectorAll<HTMLElement>(".about-me__photos .js-about-photo")
+	);
+	let desktopPhotoIndex = 0;
+	let desktopPhotoAnimating = false;
+
+	function setDesktopPhotoInstant(index: number) {
+		desktopPhotoIndex = Math.max(0, Math.min(index, aboutPhotosDesktop.length - 1));
+		aboutPhotosDesktop.forEach((el, i) => {
+			gsap.set(el, {
+				yPercent: 0,
+				opacity: i === desktopPhotoIndex ? 1 : 0,
+				pointerEvents: i === desktopPhotoIndex ? "auto" : "none",
+			});
+		});
+	}
+
+	if (!isCompactLayout()) setDesktopPhotoInstant(0);
+
+	function showDesktopPhoto(nextIndex: number) {
+		if (desktopPhotoAnimating || nextIndex === desktopPhotoIndex) return;
+		if (nextIndex < 0 || nextIndex > aboutPhotosDesktop.length - 1) return;
+
+		const current = aboutPhotosDesktop[desktopPhotoIndex];
+		const next = aboutPhotosDesktop[nextIndex];
+		const goingForward = nextIndex > desktopPhotoIndex;
 		const duration = prefersReducedMotion ? 0 : 1.2;
 
-		photoAnimating = true;
+		desktopPhotoAnimating = true;
 		gsap.set(next, { opacity: 0, yPercent: goingForward ? 100 : -100, pointerEvents: "none" });
 
 		gsap.timeline({
@@ -394,24 +442,89 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 			onComplete: () => {
 				gsap.set(current, { pointerEvents: "none" });
 				gsap.set(next, { pointerEvents: "auto" });
-				photoAnimating = false;
+				desktopPhotoAnimating = false;
 			},
 		})
 			.to(current, { yPercent: goingForward ? -100 : 100, opacity: 0 }, 0)
 			.to(next, { yPercent: 0, opacity: 1 }, 0);
 
-		photoIndex = nextIndex;
-		updateDots(photoIndex);
+		desktopPhotoIndex = nextIndex;
 	}
 
-	function handleAboutScroll(direction: 1 | -1) {
-		if (!isAboutSection(currentIndex) || aboutPhotos.length === 0) return false;
-
-		const nextPhoto = photoIndex + direction;
-		if (nextPhoto < 0 || nextPhoto > aboutPhotos.length - 1) return false;
-
-		showPhoto(nextPhoto);
+	function handleAboutDesktopScroll(direction: 1 | -1): boolean {
+		const next = desktopPhotoIndex + direction;
+		if (next < 0 || next > aboutPhotosDesktop.length - 1) return false;
+		showDesktopPhoto(next);
 		return true;
+	}
+
+	// на десктопе фото листаются только пока курсор реально над блоком с
+	// фото — если он снаружи, колесо просто листает секции страницы как
+	// обычно, не подхватывая фото-логику
+	const aboutPhotosBlock = document.querySelector<HTMLElement>(".about-me__photos");
+	let isHoveringAboutPhotos = false;
+	aboutPhotosBlock?.addEventListener("mouseenter", () => { isHoveringAboutPhotos = true; });
+	aboutPhotosBlock?.addEventListener("mouseleave", () => { isHoveringAboutPhotos = false; });
+
+	let wasCompactLayout = isCompactLayout();
+	window.addEventListener("resize", () => {
+		const compactNow = isCompactLayout();
+		if (compactNow === wasCompactLayout) return;
+		wasCompactLayout = compactNow;
+		if (compactNow) {
+			gsap.set(aboutPhotosDesktop, { clearProps: "transform,opacity,pointerEvents" });
+			setAboutStopInstant(0);
+		} else {
+			gsap.set(aboutStops, { clearProps: "transform,zIndex,pointerEvents" });
+			gsap.set(aboutPhotoSlides, { clearProps: "transform,pointerEvents" });
+			setDesktopPhotoInstant(0);
+		}
+	});
+
+	function showAboutStop(nextIndex: number) {
+		if (aboutStopAnimating || nextIndex === aboutStopIndex) return;
+		if (nextIndex < 0 || nextIndex > aboutStops.length - 1) return;
+
+		const current = aboutStops[aboutStopIndex];
+		const next = aboutStops[nextIndex];
+		const goingForward = nextIndex > aboutStopIndex;
+		const duration = prefersReducedMotion ? 0 : 0.9;
+
+		aboutStopAnimating = true;
+		gsap.set(next, { xPercent: goingForward ? 100 : -100, zIndex: 2, pointerEvents: "none" });
+
+		gsap.timeline({
+			defaults: { duration, ease: easeInOutQuint },
+			onComplete: () => {
+				gsap.set(current, { zIndex: 1, pointerEvents: "none" });
+				gsap.set(next, { pointerEvents: "auto" });
+				aboutStopAnimating = false;
+			},
+		})
+			.to(current, { xPercent: goingForward ? -100 : 100 }, 0)
+			.to(next, { xPercent: 0 }, 0);
+
+		aboutStopIndex = nextIndex;
+	}
+
+	// возвращает "inner", если стоп сам не докручен до конца в эту сторону
+	// (даём ему доскроллиться естественно, прежде чем переключать что-то),
+	// "stop" — переключили стоп внутри секции, "section" — стопы кончились,
+	// пусть вызывающий код переходит к соседней секции страницы
+	function handleAboutMobileScroll(direction: 1 | -1): "inner" | "stop" | "section" {
+		const el = aboutStops[aboutStopIndex];
+		if (el) {
+			const atEnd = direction > 0
+				? el.scrollHeight - el.scrollTop - el.clientHeight < 2
+				: el.scrollTop < 2;
+			if (!atEnd) return "inner";
+		}
+
+		const next = aboutStopIndex + direction;
+		if (next < 0 || next > aboutStops.length - 1) return "section";
+
+		showAboutStop(next);
+		return "stop";
 	}
 
 	function goToSection(index: number) {
@@ -419,21 +532,12 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		if (target === currentIndex || isAnimating) return;
 
 		isAnimating = true;
-		const enteringForward = target > currentIndex;
 		currentIndex = target;
 		window.dispatchEvent(new CustomEvent('nav:active', { detail: { index: currentIndex } }));
 
-		if (isAboutSection(currentIndex)) {
-			setPhotoInstant(enteringForward ? 0 : aboutPhotos.length - 1);
-
-			// на мобильном у секции свой внутренний скролл (контент выше экрана) —
-			// при входе в секцию ставим его в начало/конец по направлению входа,
-			// иначе можно попасть в середину чужого скролл-состояния
-			if (isCompactLayout()) {
-				const aboutEl = sections[currentIndex] as HTMLElement;
-				aboutEl.scrollTop = enteringForward ? 0 : aboutEl.scrollHeight;
-			}
-		}
+		// стоп/индекс текущего фото в "о себе" намеренно не сбрасываем при
+		// входе/выходе из секции — пользователь должен вернуться ровно туда,
+		// где остановился, независимо от того, куда потом скроллил
 
 		lenis.scrollTo(sections[currentIndex], {
 			duration: 1.2,
@@ -471,59 +575,104 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 	})
 
 	window.addEventListener("wheel", (e) => {
-		e.preventDefault();
-		if (isAnimating || photoAnimating) return;
-		const direction = e.deltaY > 0 ? 1 : -1;
-		if (handleAboutScroll(direction)) return;
-		goToSection(currentIndex + direction);
-	}, {passive: false});
+		const horizontalDominant = Math.abs(e.deltaX) > Math.abs(e.deltaY);
 
-	let touchStartY = 0;
-
-	window.addEventListener("touchstart", (e: TouchEvent) => {
-		touchStartY = e.touches[0].clientY;
-	}, {passive: true});
-
-	window.addEventListener("touchend", (e: TouchEvent) => {
-		if (isAnimating || photoAnimating) return;
-		const deltaY = touchStartY - e.changedTouches[0].clientY;
-		if (Math.abs(deltaY) < 30) return;
-		const direction = deltaY > 0 ? 1 : -1;
-
-		// «О себе» на мобильном скроллится свободно внутри своего экрана (контент
-		// выше 100svh) — свайп двигает её нативным скроллом сам по себе, к смене
-		// секции переходим только когда упёрлись в начало/конец этого скролла
 		if (isAboutSection(currentIndex) && isCompactLayout()) {
-			const aboutEl = sections[currentIndex] as HTMLElement;
-			const atTop = aboutEl.scrollTop <= 1;
-			const atBottom = aboutEl.scrollTop + aboutEl.clientHeight >= aboutEl.scrollHeight - 1;
-			if (direction === 1 && !atBottom) return;
-			if (direction === -1 && !atTop) return;
+			// горизонтальный жест на фото-стопе — это свой трек отдельных фото
+			// (см. aboutPhotoSlides выше), к переключению текст<->фото или
+			// смене секции отношения не имеет
+			if (horizontalDominant) {
+				if (aboutStopIndex === 1 && !aboutPhotoAnimating) {
+					e.preventDefault();
+					showAboutPhoto(aboutPhotoIndex + (e.deltaX > 0 ? 1 : -1));
+				}
+				return;
+			}
+
+			// стоп (или фото-стоп) ещё анимируется — глотаем событие целиком,
+			// иначе одно физическое движение колеса/трекпада шлёт много
+			// wheel-событий подряд, и следующее из них застаёт уже
+			// переключившийся aboutStopIndex и тут же уводит на следующую
+			// секцию страницы — тот самый баг с авто-прыжком на фото
+			if (isAnimating || aboutStopAnimating) {
+				e.preventDefault();
+				return;
+			}
+
+			const direction = e.deltaY > 0 ? 1 : -1;
+			const result = handleAboutMobileScroll(direction);
+			// "inner" — стоп сам не докручен, отдаём событие браузеру нативно
+			// проскроллить его дальше, ничего не перехватываем
+			if (result === "inner") return;
+			e.preventDefault();
+			if (result === "stop") return;
 			goToSection(currentIndex + direction);
 			return;
 		}
 
-		if (handleAboutScroll(direction)) return;
+		if (horizontalDominant) return;
+		e.preventDefault();
+		if (isAnimating) return;
+
+		const direction = e.deltaY > 0 ? 1 : -1;
+
+		// десктоп + секция "о себе" + курсор реально над фото — сначала
+		// пролистываем их по одному, и только когда они кончились, уходим на
+		// соседнюю секцию страницы. Если курсор не над фото — колесо сразу
+		// листает секции, фото не трогает
+		if (isAboutSection(currentIndex) && !isCompactLayout() && isHoveringAboutPhotos) {
+			if (desktopPhotoAnimating) return;
+			if (handleAboutDesktopScroll(direction)) return;
+		}
+
 		goToSection(currentIndex + direction);
+	}, {passive: false});
+
+	let touchStartX = 0;
+	let touchStartY = 0;
+
+	window.addEventListener("touchstart", (e: TouchEvent) => {
+		touchStartX = e.touches[0].clientX;
+		touchStartY = e.touches[0].clientY;
 	}, {passive: true});
 
-	// свайп по фото — отдельный горизонтальный жест, не завязан на вертикальную
-	// пагинацию страницы (маленький deltaY у горизонтального свайпа сам не
-	// пройдёт порог в 30px у обработчика выше, конфликта нет)
-	let photoTouchStartX = 0;
-	const aboutPhotosEl = document.getElementById("about-photos");
+	window.addEventListener("touchend", (e: TouchEvent) => {
+		const deltaX = touchStartX - e.changedTouches[0].clientX;
+		const deltaY = touchStartY - e.changedTouches[0].clientY;
+		const horizontalDominant = Math.abs(deltaX) > Math.abs(deltaY);
 
-	aboutPhotosEl?.addEventListener("touchstart", (e: TouchEvent) => {
-		photoTouchStartX = e.touches[0].clientX;
-	}, {passive: true});
+		if (isAboutSection(currentIndex) && isCompactLayout()) {
+			if (horizontalDominant) {
+				if (Math.abs(deltaX) < 30) return;
+				if (aboutStopIndex === 1 && !aboutPhotoAnimating) {
+					showAboutPhoto(aboutPhotoIndex + (deltaX > 0 ? 1 : -1));
+				}
+				return;
+			}
 
-	aboutPhotosEl?.addEventListener("touchend", (e: TouchEvent) => {
-		if (photoAnimating) return;
-		const deltaX = photoTouchStartX - e.changedTouches[0].clientX;
-		if (Math.abs(deltaX) < 40) return;
-		const direction = deltaX > 0 ? 1 : -1;
-		const next = Math.max(0, Math.min(photoIndex + direction, aboutPhotos.length - 1));
-		showPhoto(next);
+			if (Math.abs(deltaY) < 30) return;
+			if (isAnimating || aboutStopAnimating) return;
+			// к моменту touchend нативный скролл внутри стопа (если был) уже
+			// применился сам — просто проверяем, докручен ли стоп до конца
+			const direction = deltaY > 0 ? 1 : -1;
+			const result = handleAboutMobileScroll(direction);
+			if (result !== "section") return;
+			goToSection(currentIndex + direction);
+			return;
+		}
+
+		if (horizontalDominant) return;
+		if (Math.abs(deltaY) < 30) return;
+		if (isAnimating) return;
+
+		const direction = deltaY > 0 ? 1 : -1;
+
+		if (isAboutSection(currentIndex) && !isCompactLayout()) {
+			if (desktopPhotoAnimating) return;
+			if (handleAboutDesktopScroll(direction)) return;
+		}
+
+		goToSection(currentIndex + direction);
 	}, {passive: true});
 
 </script>
@@ -711,7 +860,7 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		overflow: hidden;
 		font-family: var(--font-mono);
 		display: flex;
-		align-items: center;
+		align-items: flex-start;
 		gap: 56px;
 		justify-content: center;
 		padding: var(--space-9) var(--space-6);
@@ -808,23 +957,6 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		display: none;
 	}
 
-	.about-me__rule {
-		width: 48px;
-		height: 2px;
-		background: var(--color-burnt-orange);
-		margin: 0 0 var(--space-6);
-	}
-
-	.def-text {
-		font-family: var(--font-body);
-		font-size: 16px;
-		font-weight: 500;
-		color: #F2EDE9B3;
-		line-height: 1.7;
-		margin: 0 0 var(--space-7);
-		max-width: 560px;
-	}
-
 	.about-me__genres {
 		font-family: var(--font-mono);
 		font-size: 12px;
@@ -836,65 +968,20 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		margin: 0;
 	}
 
-	.about-me__info h4 {
-		margin: 50px 0 0;
-	}
 
-	.genres {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px;
-		margin: 20px 0 0;
-
-	}
-
-	.genres__item {
-		border: 1px solid var(--color-burnt-orange);
-		color: var(--color-burnt-orange);
-		font-size: 14px;
-		font-weight: 500;
-		padding: 8px 13px;
-	}
-
-	.about-me__photo-block {
+	/* просто сетка миниатюр, обычный поток — без слайдера/оверлеев и без
+	   привязки к высоте экрана */
+	/* десктоп: одно фото за раз на весь бокс, кроссфейд между ними — см.
+	   aboutPhotosDesktop/showDesktopPhoto в <script>. Перекрывается в
+	   @media (max-width: 700px) под мобильный горизонтальный трек, эта
+	   секция мобильную вёрстку не трогает */
+	.about-me__photos {
 		position: relative;
 		z-index: 1;
 		width: 100%;
 		max-width: 420px;
-		flex: 0 0 auto;
-	}
-
-	.about-me__photos {
-		position: relative;
-		display: grid;
+		aspect-ratio: 3 / 4;
 		overflow: hidden;
-		width: 100%;
-	}
-
-	.about-me__dots {
-		display: none;
-		align-items: center;
-		justify-content: center;
-		gap: 10px;
-		margin-top: var(--space-4);
-	}
-
-	.about-me__dots button {
-		width: 6px;
-		height: 6px;
-		padding: 0;
-		border: 1px solid var(--color-copper);
-		border-radius: 50%;
-		background: transparent;
-		cursor: pointer;
-		transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
-	}
-
-	.about-me__dots button.is-active {
-		background: var(--color-burnt-orange);
-		border-color: var(--color-burnt-orange);
-		transform: scale(1.3);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
@@ -926,45 +1013,67 @@ import PlayPauseIcon from "../components/PlayPauseIcon";
 		.hero__desc {
 			max-width: 100%;
 		}
+	}
 
+	/* на десктопе секция — обычный поток (см. .about-me выше). На узких экранах
+	   становится одной "страницей" высотой в экран, где .about-me__info и
+	   .about-me__photos лежат друг на друге на весь размер секции — какой из
+	   них показан, переключает скрипт (см. aboutStops в <script>) свайпом/
+	   колесом, независимо от общей постраничной прокрутки между секциями */
+	@media (max-width: 700px) {
 		.about-me {
-			display: flex;
-			flex-direction: column;
-			align-items: stretch;
-			justify-content: flex-start;
+			display: block;
 			height: 100svh;
-			overflow-y: auto;
-			overscroll-behavior-y: contain;
-			-webkit-overflow-scrolling: touch;
-			gap: var(--space-6);
-			padding: var(--space-7) var(--space-4);
+			overflow: hidden;
+			padding: 0;
 		}
 
-		.about-me__photo-block {
-			order: -1;
-			max-width: 340px;
-			margin: 0 auto;
-		}
-
-		.about-me__dots {
-			display: flex;
-		}
-
-		.about-me__info {
+		/* стопы — на весь размер секции (inset:0), без своих полей по краям:
+		   xPercent в скрипте двигает элемент на 100% ЕГО СОБСТВЕННОЙ ширины,
+		   и если сузить его инсетами, при сдвиге с краю остаётся щель ровно
+		   в размер этого инсета — фото было видно сбоку на соседнем стопе.
+		   Поля вместо этого — обычным padding внутри .about-me__info (у фото
+		   его нет намеренно, они на всю ширину). width:auto — иначе width:100%
+		   из базового (десктопного) правила .about-me__info спорит с inset и
+		   контент вылезает за край */
+		.about-me__info,
+		.about-me__photos {
+			position: absolute;
+			inset: 0;
+			width: auto;
 			max-width: 100%;
+		}
+
+		/* сверху отступ больше (--space-9) — под этой шириной поверх страницы
+		   висит фикс-шапка (LEVITI + бургер, см. NavBar.module.css: ~68px),
+		   секция всегда скроллится точно под неё, --space-7 было мало и
+		   заголовок вылезал прямо из-под шапки. Если текст не помещается —
+		   сам скроллится по вертикали (overflow-y), вместо того чтобы
+		   обрезаться */
+		.about-me__info {
+			box-sizing: border-box;
+			padding: var(--space-9) var(--space-4) var(--space-7);
+			overflow-y: auto;
+		}
+
+		/* фото — свой горизонтальный трек той же GSAP-анимацией, что и переход
+		   между текстом/фото (см. aboutPhotoSlides в <script>): каждое фото на
+		   весь размер стопа, показан ровно один за раз. aspect-ratio:auto —
+		   сбрасывает 3/4 из десктопного базового правила, иначе оно продолжает
+		   действовать поверх inset:0 и высота считается от ширины, а не
+		   растягивается на весь экран (снизу оставалась пустота) */
+		.about-me__photos {
+			display: block;
+			overflow: hidden;
+			aspect-ratio: auto;
 		}
 
 		.about-me__title {
 			font-size: clamp(2.25rem, 11vw, 3rem);
 		}
 
-		.def-text {
-			font-size: 15px;
-			max-width: 100%;
-		}
-
 		.about-me__bg-mark text {
-			font-size: clamp(5rem, 30vw, 9rem);
+			font-size: clamp(5rem, 18vw, 9rem);
 		}
 	}
 </style>
