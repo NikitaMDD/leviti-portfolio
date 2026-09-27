@@ -1,0 +1,384 @@
+---
+// Секция "Ивенты": данные — src/content/events.yaml. На будущие/прошедшие
+// делится по дате в момент сборки, поэтому деплой пересобирается по крону
+// раз в сутки (см. .github/workflows/deploy.yml)
+import { getCollection } from "astro:content";
+import { CITY_CODES } from "../lib/cities";
+
+// страница листается по секциям на высоту экрана, внутреннего скролла у
+// секции нет — прошедших показываем не больше этого числа (самые свежие)
+const PAST_LIMIT = 6;
+
+// "сегодня" по Москве, а не по UTC сборочной машины — иначе вечерний ивент
+// уедет в прошедшие на три часа раньше
+const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow" }).format(new Date());
+const isoDay = (d: Date) => d.toISOString().slice(0, 10);
+
+const all = (await getCollection("events")).map((e) => ({ id: e.id, ...e.data }));
+const upcoming = all
+	.filter((e) => isoDay(e.date) >= today)
+	.sort((a, b) => +a.date - +b.date);
+const past = all
+	.filter((e) => isoDay(e.date) < today)
+	.sort((a, b) => +b.date - +a.date)
+	.slice(0, PAST_LIMIT);
+
+// "скоро" показываем всегда (пустое — с приглашением на букинг),
+// "прошедшие" — только если есть что показать
+const groups = [
+	{ kind: "upcoming", label: "Скоро", items: upcoming },
+	{ kind: "past", label: "Прошедшие", items: past },
+];
+
+const cities = [...new Set(all.map((e) => e.city))];
+
+const pad = (n: number) => String(n).padStart(2, "0");
+const dayMonth = (d: Date) => `${pad(d.getUTCDate())}.${pad(d.getUTCMonth() + 1)}`;
+---
+
+<section class="events" id="events">
+	<header class="events__head">
+		<h2 class="events__title">Ивенты</h2>
+		<p class="events__cities">
+			{cities.map((c) => <span>{c}</span>)}
+		</p>
+	</header>
+
+	{groups.map((g) => (g.items.length > 0 || g.kind === "upcoming") && (
+		<>
+			<h3 class="events__group-label">{g.label}</h3>
+			{g.items.length === 0 ? (
+				<div class="events__empty">
+					<p>Ближайших дат пока нет — открыта для букинга.</p>
+					<a class="events__btn events__btn--solid" href="#booking" data-goto-section="booking">
+						Забронировать дату
+					</a>
+				</div>
+			) : (
+				<ul class="events__list">
+					{g.items.map((e) => (
+						<li class={`event event--${g.kind}`}>
+							<div class:list={["event__date", { "event__date--tbc": e.tbc }]}>
+								{e.tbc ? "--.--" : dayMonth(e.date)}
+								{!e.tbc && <span class="event__year">{e.date.getUTCFullYear()}</span>}
+							</div>
+							<div class="event__main">
+								<span class="event__title">{e.title}</span>
+								{e.venue && <span class="event__venue">{e.venue}</span>}
+							</div>
+							<span class="event__city" title={e.city}>{CITY_CODES[e.city] ?? e.city}</span>
+							<span class="event__tag">{e.tbc ? "уточняется" : e.role}</span>
+							<div class="event__actions">
+								{e.tickets && <a class="events__btn events__btn--solid" href={e.tickets} target="_blank" rel="noopener">Билеты</a>}
+								{e.post && <a class="events__btn" href={e.post} target="_blank" rel="noopener">Пост</a>}
+							</div>
+						</li>
+					))}
+				</ul>
+			)}
+		</>
+	))}
+</section>
+
+<style>
+	.events {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding: var(--space-9) var(--space-6) var(--space-7);
+		max-width: 1080px;
+		margin: 0 auto;
+	}
+
+	.events__head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: var(--space-3) var(--space-5);
+		margin: 0 0 var(--space-6);
+	}
+
+	.events__title {
+		font-family: var(--font-display);
+		font-weight: 900;
+		text-transform: uppercase;
+		line-height: 0.92;
+		font-size: clamp(2.75rem, 6vw, 4.75rem);
+		margin: 0;
+		color: var(--color-title);
+	}
+
+	/* тот же приём, что у .about-me__stats — мелкий моно-список через красные квадраты */
+	.events__cities {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3) var(--space-5);
+		margin: 0;
+		font-family: var(--font-mono);
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.events__cities span {
+		position: relative;
+		padding-left: var(--space-4);
+	}
+
+	.events__cities span::before {
+		content: "";
+		position: absolute;
+		left: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 4px;
+		height: 4px;
+		background: var(--color-lust);
+	}
+
+	.events__cities span:first-child {
+		padding-left: 0;
+	}
+
+	.events__cities span:first-child::before {
+		display: none;
+	}
+
+	.events__group-label {
+		display: flex;
+		align-items: center;
+		gap: var(--space-4);
+		margin: var(--space-5) 0 0;
+		font-family: var(--font-mono);
+		font-size: 12px;
+		font-weight: 500;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--color-burnt-orange);
+	}
+
+	.events__group-label::after {
+		content: "";
+		flex: 1;
+		height: 1px;
+		background: rgba(242, 237, 233, 0.14);
+	}
+
+	.events__list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.events__empty {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: var(--space-4);
+		padding: 20px 0 24px;
+		border-bottom: 1px solid rgba(242, 237, 233, 0.14);
+	}
+
+	.events__empty p {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 500;
+		color: #F2EDE9B3;
+	}
+
+	/* строка афиши: дата | название + площадка | город | роль | ссылки */
+	.event {
+		display: grid;
+		grid-template-columns: 88px minmax(0, 1fr) 48px 112px 176px;
+		align-items: center;
+		gap: var(--space-5);
+		padding: var(--space-4) 0;
+		border-bottom: 1px solid rgba(242, 237, 233, 0.14);
+	}
+
+	.event__date {
+		display: flex;
+		flex-direction: column;
+		font-family: var(--font-display);
+		font-weight: 900;
+		font-size: 24px;
+		line-height: 1;
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* заглушка даты — моно-шрифтом, в display-начертании прочерки
+	   сливаются в кляксы */
+	.event__date--tbc {
+		font-family: var(--font-mono);
+		font-weight: 400;
+		font-size: 14px;
+		letter-spacing: 0.04em;
+		white-space: nowrap;
+		color: rgba(242, 237, 233, 0.5);
+	}
+
+	.event__year {
+		margin-top: var(--space-1);
+		font-family: var(--font-mono);
+		font-weight: 400;
+		font-size: 11px;
+		letter-spacing: 0.06em;
+		color: rgba(242, 237, 233, 0.5);
+	}
+
+	.event__main {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+		min-width: 0;
+	}
+
+	.event__title {
+		font-family: var(--font-display);
+		font-weight: 800;
+		font-size: 18px;
+		text-transform: uppercase;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.event__venue,
+	.event__city,
+	.event__tag {
+		font-family: var(--font-mono);
+		font-size: 12px;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: rgba(242, 237, 233, 0.6);
+	}
+
+	.event__tag:empty {
+		visibility: hidden;
+	}
+
+	.event__actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-2);
+	}
+
+	.event--upcoming .event__date {
+		color: var(--color-burnt-orange);
+	}
+
+	.event--upcoming .event__tag {
+		color: var(--color-burnt-orange);
+	}
+
+	.event--past .event__date,
+	.event--past .event__title {
+		color: rgba(242, 237, 233, 0.78);
+	}
+
+	.events__btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 10px 16px;
+		border: 1px solid var(--color-burnt-orange);
+		border-radius: 2px;
+		font-family: var(--font-mono);
+		font-size: 12px;
+		text-transform: uppercase;
+		text-decoration: none;
+		color: var(--color-burnt-orange);
+		transition: background-color 0.2s ease, color 0.2s ease;
+	}
+
+	.events__btn:hover {
+		background: var(--color-burnt-orange);
+		color: var(--color-black-pearl);
+	}
+
+	.events__btn--solid {
+		background: var(--color-lust);
+		border-color: var(--color-lust);
+		color: var(--color-title);
+	}
+
+	.events__btn--solid:hover {
+		background: var(--color-burnt-orange);
+		border-color: var(--color-burnt-orange);
+	}
+
+	.events__btn:focus-visible {
+		outline: 2px solid var(--color-title);
+		outline-offset: 2px;
+	}
+
+	/* секция ровно в экран — на невысоких экранах режем хвост прошедших,
+	   чтобы нижние строки не уходили под край */
+	@media (max-height: 820px) {
+		.event--past:nth-child(n + 5) {
+			display: none;
+		}
+	}
+
+	@media (max-width: 700px) {
+		.events {
+			height: 100svh;
+			justify-content: flex-start;
+			padding: var(--space-9) var(--space-4) var(--space-6);
+		}
+
+		.events__head {
+			margin-bottom: var(--space-4);
+		}
+
+		/* на мобильном: дата слева, справа название, под ним город · роль · ссылки */
+		.event {
+			grid-template-columns: 56px minmax(0, 1fr) auto;
+			grid-template-areas:
+				"date main actions"
+				"date meta actions";
+			gap: var(--space-1) var(--space-3);
+			padding: var(--space-3) 0;
+		}
+
+		.event__date {
+			grid-area: date;
+			font-size: 18px;
+		}
+
+		.event__main {
+			grid-area: main;
+		}
+
+		.event__title {
+			font-size: 15px;
+		}
+
+		.event__venue {
+			display: none;
+		}
+
+		.event__city {
+			grid-area: meta;
+			font-size: 11px;
+		}
+
+		.event__tag {
+			grid-area: meta;
+			justify-self: start;
+			margin-left: 48px;
+			font-size: 11px;
+		}
+
+		.event__actions {
+			grid-area: actions;
+		}
+
+		.events__btn {
+			padding: 8px 12px;
+			font-size: 11px;
+		}
+	}
+</style>
