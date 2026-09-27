@@ -24,7 +24,7 @@ const { title = "leviti — performance dj" } = Astro.props
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-        href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet"
     />
 </head>
@@ -46,8 +46,10 @@ const { title = "leviti — performance dj" } = Astro.props
         --color-title: #F2EDE9;
 
         /* типографика */
-        --font-display: "Archivo", sans-serif;
-        --font-body: "Archivo", sans-serif;
+        /* Archivo заменён: в Google Fonts у него нет кириллицы, русский
+           текст падал в системный фолбэк */
+        --font-display: "Golos Text", sans-serif;
+        --font-body: "Golos Text", sans-serif;
         --font-mono: "JetBrains Mono", monospace;
 
         /* spacing, база 8px */
