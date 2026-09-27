@@ -8,10 +8,12 @@ import {ImageContainer} from "../components/ImageContainer";
 import { NavBar } from "../components/NavBar";
 import PlayPauseIcon from "../components/PlayPauseIcon";
 import AboutBioBlock from "../components/AboutBioBlock.astro";
+import EventsSection from "../components/EventsSection.astro";
+import BookingSection from "../components/BookingSection.astro";
 ---
 
 <Layout>
-	<NavBar links={['Главная', 'Миксы', 'О себе', 'Ивенты', 'Контакты']} client:idle />
+	<NavBar links={['Главная', 'О себе', 'Ивенты', 'Контакты']} client:idle />
 	<!-- вне #page-shell намеренно: это position:fixed элемент, а transform на
 	предке меняет его containing block — если оставить его внутри сдвигаемой
 	обёртки, "LEVITI" укатится вместе со страницей при открытом мобильном меню -->
@@ -35,7 +37,7 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 		</div>
 	</section>
 
-	<Placeholder background="BLACK" placeholderText="MIXES" />
+	<!--<Placeholder background="BLACK" placeholderText="MIXES" />-->
 
 	<section class="about-me">
 		<svg class="about-me__bg-mark" aria-hidden="true" focusable="false">
@@ -100,9 +102,9 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 		</div>
 	</section>
 
-	<Placeholder background="BLACK" placeholderText="EVENTS" />
+	<EventsSection />
 
-	<Placeholder background="BLACK" placeholderText="BOOKING"/>
+	<BookingSection />
 	</div>
 
 </Layout>
@@ -198,7 +200,7 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 
 	measureStickyTitle();
 	window.addEventListener("resize", measureStickyTitle);
-	// шрифт Archivo грузится асинхронно — если он подъедет после первого замера,
+	// шрифт Golos Text грузится асинхронно — если он подъедет после первого замера,
 	// пересчитываем rect, иначе стартовая позиция может быть на пиксель-другой мимо
 	document.fonts?.ready?.then(measureStickyTitle);
 
@@ -403,7 +405,6 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 	// если ширина экрана переходит через 700px (ресайз окна, поворот
 	// телефона) — либо выставляем стопы заново под мобильный режим, либо
 	// снимаем инлайн-стили, чтобы не мешать обычному desktop-потоку
-	// ===== десктоп (не адаптив) =====
 	// раньше на каждый тик скролла вниз/вверх по секции "о себе" на десктопе
 	// менялось текущее фото (вертикальный кроссфейд) — эффект потерялся,
 	// когда секцию упростили в обычный поток со статичной сеткой миниатюр.
@@ -533,6 +534,17 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 		return "stop";
 	}
 
+	// секция со своим внутренним скроллом (data-inner-scroll, напр. форма
+	// букинга на мобильном): пока он не докручен до края в сторону жеста,
+	// жест принадлежит ему, а не переключению секций
+	function innerScrollAllows(direction: number) {
+		const el = sections[currentIndex]?.querySelector<HTMLElement>("[data-inner-scroll]");
+		if (!el || el.scrollHeight - el.clientHeight < 2) return false;
+		return direction > 0
+			? el.scrollHeight - el.scrollTop - el.clientHeight >= 2
+			: el.scrollTop >= 2;
+	}
+
 	function goToSection(index: number) {
 		const target = Math.max(0, Math.min(index, sections.length - 1));
 		if (target === currentIndex || isAnimating) return;
@@ -562,6 +574,18 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 		const { index } = (e as CustomEvent<{index: number}>).detail;
 		goToSection(index);
 	})
+
+	// ссылки внутри страницы (например "Забронировать дату" в ивентах) —
+	// нативный переход по якорю сломал бы постраничный скролл, поэтому
+	// ведём через тот же goToSection
+	document.querySelectorAll<HTMLAnchorElement>("[data-goto-section]").forEach((link) => {
+		link.addEventListener("click", (e) => {
+			const index = sections.findIndex((s) => s.id === link.dataset.gotoSection);
+			if (index === -1) return;
+			e.preventDefault();
+			goToSection(index);
+		});
+	});
 
 	// «выдвижное» мобильное меню в NavBar сообщает о своём состоянии сюда —
 	// страница отъезжает влево (см. CSS #page-shell), открывая панель меню
@@ -617,10 +641,10 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 		}
 
 		if (horizontalDominant) return;
+		const direction = e.deltaY > 0 ? 1 : -1;
+		if (!isAnimating && innerScrollAllows(direction)) return;
 		e.preventDefault();
 		if (isAnimating) return;
-
-		const direction = e.deltaY > 0 ? 1 : -1;
 
 		// десктоп + секция "о себе" + курсор реально над фото — сначала
 		// пролистываем их по одному, и только когда они кончились, уходим на
@@ -672,6 +696,7 @@ import AboutBioBlock from "../components/AboutBioBlock.astro";
 		if (isAnimating) return;
 
 		const direction = deltaY > 0 ? 1 : -1;
+		if (innerScrollAllows(direction)) return;
 
 		if (isAboutSection(currentIndex) && !isCompactLayout()) {
 			if (desktopPhotoAnimating) return;
