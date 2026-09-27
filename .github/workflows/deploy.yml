@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # ежедневная пересборка — ивенты делятся на "скоро"/"прошедшие" по дате
+  # в момент сборки (src/components/EventsSection.astro). 21:05 UTC = 00:05 МСК
+  schedule:
+    - cron: "5 21 * * *"
 
 permissions:
   contents: read
